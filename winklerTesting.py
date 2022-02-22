@@ -111,8 +111,117 @@ def pgfOutbreak(g1Outbreak):
     return root, outbreak
 
 
-x = ERCoeff(10,0.5,10)
 
-r, o = pgfOutbreak(x)
+######
+###### WINKLER FUNCTIONS
+######
 
-def winklerRevamp
+#####
+# Checked on 1/20/22 - works
+# Changing the coefficients to alter them for the log function 
+#####    
+
+
+def prepLogFunction(coeffs):
+    small = min(np.abs(coeffs))
+    
+    coeffs= np.delete(coeffs , np.where(coeffs == small))
+    
+    coeffs_fix = np.true_divide(small, coeffs)
+    
+    return coeffs_fix, small
+
+
+def prepSelfconsistent(coeffs):
+    
+    a_array = np.array(coeffs)
+    
+    if a_array.size > 1:
+       if a_array.size >= 2: 
+           a_array[1] = a_array[1] - 1
+           a_prime_array = derivative(a_array)
+       else:
+           a_array = np.append(a_array, -1)
+           a_prime_array= derivative(a_array)
+    else:
+       a_array = np.array([0,-1])
+       a_prime_array = np.array([-1])    
+        
+    a_array =  a_array[ a_array != 0] #takes out the zeros for the Winkler computation
+
+    
+    return a_array, a_prime_array
+
+
+def expectationOfU(a_i_coeff, true_root, sigma):
+    
+    
+    a_i, prime_coeff = prepSelfconsistent(a_i_coeff)
+    
+    
+    # making phi a vector the same size as the coefficients
+    phi = np.zeros(a_i.size)
+    for k in range(a_i.size):
+        phi[k] = true_root**k
+
+   
+    prime_coeff = np.flip(prime_coeff)
+    prime = np.poly1d(prime_coeff)
+    
+    
+    
+    value = -np.log(true_root) - np.log(np.abs(prime(true_root))) + np.log(np.sqrt(2)) + np.log(sigma) + np.log(np.linalg.norm(phi,2)) - np.log(np.sqrt(math.pi))
+    
+    
+    return np.exp(value)
+
+
+def expectationOfCoeff(a_i_coeff, sigma):
+    
+    a_i, prime_coeff = prepSelfconsistent(a_i_coeff)
+    
+    aInverse, smallCoef = prepLogFunction(a_i)
+    
+    bottomValue = np.log(sigma) + np.log(np.sqrt(2)) - np.log(np.sqrt(math.pi)) + np.log(np.linalg.norm(aInverse,1))
+    
+    return np.exp(bottomValue)
+
+
+sigma = 0.3
+r0 = 3.9
+k = 0.19
+maxk = 20
+
+a = 1/k
+
+g1 = np.zeros(maxk)
+g1True = np.zeros(maxk)
+
+for i in range(maxk):
+    error = np.random.normal(0,sigma)
+         # while error < -1:
+         #     error = np.random.normal(0,j*inc)
+             
+    g1True[i] = (math.gamma(i+k)/(math.factorial(i)*math.gamma(k)))*((a*r0)/(1+a*r0))**(i) * (1/(1 + a*r0))**(k)
+    while error < -g1True[i]:
+         error = np.random.normal(0,sigma)
+         
+    g1[i] = g1True[i]*(1 + error)
+    
+     
+g1 = g1/np.sum(g1)
+g1True = g1True/np.sum(g1True)
+ 
+ 
+true_root, true_outbreak = pgfOutbreak(g1True)
+#Solving for the pgf
+root, outbreak = pgfOutbreak(g1)
+
+expectU = expectationOfU(g1True, true_root, sigma)
+expectCoeff = expectationOfCoeff(true_root, sigma)
+
+winkler = expectU/expectCoeff
+
+print(expectU)
+print(expectCoeff)
+print(winkler)
