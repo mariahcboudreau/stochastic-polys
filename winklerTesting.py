@@ -187,8 +187,28 @@ def expectationOfCoeff(a_i_coeff, sigma):
     return np.exp(bottomValue)
 
 
-sigma = 0.3
-r0 = 3.9
+
+
+def slopes(rise, runValue, r0, k):
+# plt.figure(figsize=(7,4))
+
+    m, b = np.polyfit(runValue, rise, 1)
+
+# slopelabel = "Slope = %.4f"%m
+
+# plt.scatter(run, rise)
+# plt.plot(run, m*run + b, label = slopelabel)
+# plt.title("Change in the SD of roots versus change in SD of error (R0 = %.1f, k = %.2f)"%(r0, k))   
+# plt.ylabel("SD of Roots")
+# plt.xlabel("SD of Error")
+# plt.legend()
+    return m
+
+
+#%%%
+
+sigma = 0.1
+r0 = 2.3
 k = 0.19
 maxk = 20
 
@@ -220,8 +240,13 @@ root, outbreak = pgfOutbreak(g1)
 expectU = expectationOfU(g1True, true_root, sigma)
 expectCoeff = expectationOfCoeff(true_root, sigma)
 
+
 winkler = expectU/expectCoeff
 
 print(expectU)
-print(expectCoeff)
-print(winkler)
+# print(expectCoeff)
+# print(winkler)
+
+
+
+
