@@ -431,14 +431,17 @@ def main(r0, k, col, numSD, inc, maxk):
      
     for b in range(numSD):    
         standDevs[b] = np.std(U[:,b])
+        
+
       
         
     sdValues = np.arange(numSD)
     sdValues = sdValues*inc
     
-    #return slopes(standDevs, sdValues, r0, k)
+    #print(slopes(standDevs, sdValues, r0, k))
+    #print(standDevs)
     violins(U)
-    ridgePlots(U)    
+    #ridgePlots(U)    
     return U   
     
 
@@ -492,9 +495,9 @@ def main(r0, k, col, numSD, inc, maxk):
 #%% Running violins
         
 r0 = 2.3
-k = 0.19
+k = 0.09
 col = 100
-numSD = 20
+numSD = 10
 inc = 0.01
 maxk = 20
 # need to incorporate the noisy values into the measure
