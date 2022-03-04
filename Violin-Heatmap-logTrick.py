@@ -434,11 +434,13 @@ def main(r0, k, col, numSD, inc, maxk):
         
 
       
-        
+    standDevs_length = len(standDevs)
+    last_element = standDevs[standDevs_length - 1]
+    
     sdValues = np.arange(numSD)
     sdValues = sdValues*inc
-    
-    #print(slopes(standDevs, sdValues, r0, k))
+    print("Last SD value: %.5f" %last_element)
+    print("Slope: %.5f"% (slopes(standDevs, sdValues, r0, k)))
     #print(standDevs)
     violins(U)
     #ridgePlots(U)    
@@ -494,8 +496,8 @@ def main(r0, k, col, numSD, inc, maxk):
             
 #%% Running violins
         
-r0 = 2.3
-k = 0.09
+r0 = 1.9
+k = 0.21
 col = 100
 numSD = 10
 inc = 0.01
