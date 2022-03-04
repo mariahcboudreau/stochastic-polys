@@ -203,3 +203,127 @@ def slopes(rise, runValue, r0, k):
 # plt.legend()
     return m
 
+
+def violins(roots):
+    
+    df_roots = pd.DataFrame(roots)
+    
+    
+    plt.figure(figsize = (7,7))
+    plt.title("PGF Sensitivity")
+    plt.xlabel("Standard Deviation (times 0.01)")
+    plt.ylabel("Root U")
+    ax = sns.boxplot(data=df_roots, color = "seagreen") 
+    plt.show(ax)
+
+
+def main(r0, k, col, numSD, inc, maxk):
+    
+    U = np.zeros((col, numSD))
+    S = np.zeros((col, numSD))
+    winklerMeasures = np.zeros((col, numSD))
+    standDevs = np.zeros(numSD)
+    g1 = np.zeros(maxk)
+    g1True = np.zeros(maxk)
+    
+    trial = np.zeros(maxk)
+    
+    a = 1/k
+    
+    # print(k)
+    
+    for j in range(numSD):
+        
+        
+        
+        for n in range(col):
+            
+            for i in range(maxk):
+                
+                error = np.random.normal(0,j*inc)
+                # while error < -1:
+                #     error = np.random.normal(0,j*inc)
+                    
+                g1True[i] = (math.gamma(i+k)/(math.factorial(i)*math.gamma(k)))*((a*r0)/(1+a*r0))**(i) * (1/(1 + a*r0))**(k)
+                while error < -g1True[i]:
+                    error = np.random.normal(0,j*inc)
+                    
+                g1[i] = g1True[i]*(1 + error)
+                #g1[i] = g1True[i] + error
+                
+            g1 = g1/np.sum(g1)
+            g1True = g1True/np.sum(g1True)
+            
+            #trial = np.divide((g1True - g1), g1True)
+            
+            
+            # if k < 0.12:
+            #     print(np.std(trial), j*inc, k)
+            
+            
+           #Solving for the pgf
+            root, outbreak = pgfOutbreak(g1)
+            
+            U[n,j] = root
+            S[n,j] = outbreak
+            
+            
+            
+           # winklerMeasures[n,j] = winklerTrunc(10000, U[0,0], g1True, g1, j*inc)
+            
+            #winklerMeasures[n,j] = originalWinklerValue(U[0,0], g1True, g1)
+            
+     
+    for b in range(numSD):    
+        standDevs[b] = np.std(U[:,b])
+        
+
+      
+        
+    sdValues = np.arange(numSD)
+    sdValues = sdValues*inc
+    
+    #print(slopes(standDevs, sdValues, r0, k))
+    #print(standDevs)
+    violins(U)
+    #ridgePlots(U)    
+    
+
+
+        
+
+col = 100
+numSD = 10
+inc = 0.01
+maxk = 20
+
+# r0_vec = np.arange(1.5, 4, 0.1)
+# k_vec = np.arange(0.1, 0.25, 0.01)
+
+# r0_vals = np.empty((len(r0_vec)*len(k_vec)))
+# k_vals = np.empty((len(r0_vec)*len(k_vec)))
+# root_vals = np.empty((len(r0_vec)*len(k_vec)))
+# count = 0
+# for r0 in r0_vec:
+#     for k in k_vec:
+            
+#         r0_vals[count] = r0
+#         k_vals[count] = k
+#         root_vals[count] = main(r0, k, col, numSD, inc, maxk)
+#         count += 1
+
+# df_roots = pd.DataFrame({'R0': r0_vals, 'k':k_vals, 'Roots':root_vals}) 
+
+
+#%%%
+
+col = 100
+numSD = 10
+inc = 0.01
+maxk = 20
+
+# = main(r0, k, col, numSD, inc, maxk)
+
+
+
+    

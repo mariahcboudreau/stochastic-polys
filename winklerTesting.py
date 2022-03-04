@@ -205,11 +205,14 @@ def slopes(rise, runValue, r0, k):
     return m
 
 
+
+
+
 #%%%
 
 sigma = 0.1
-r0 = 2.3
-k = 0.19
+r0 = 1.9
+k = 0.21
 maxk = 20
 
 a = 1/k
