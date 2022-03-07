@@ -4,6 +4,9 @@
 Created on Wed Mar  2 11:50:45 2022
 
 @author: mariahboudreau
+
+
+OFFICIAL VIOLIN CODE
 """
 
 
@@ -285,24 +288,57 @@ def main(r0, k, col, numSD, inc, maxk):
     
     #print(slopes(standDevs, sdValues, r0, k))
     #print(standDevs)
-    violins(U)
+    #violins(U)
     #ridgePlots(U)    
-    
+    return U[0,0]
 
+
+def solvingForExpectaion(r0, k, sigma):
+    maxk = 20
+    
+    a = 1/k
+    
+    g1 = np.zeros(maxk)
+    g1True = np.zeros(maxk)
+    
+    for i in range(maxk):
+        error = np.random.normal(0,sigma)
+             # while error < -1:
+             #     error = np.random.normal(0,j*inc)
+                 
+        g1True[i] = (math.gamma(i+k)/(math.factorial(i)*math.gamma(k)))*((a*r0)/(1+a*r0))**(i) * (1/(1 + a*r0))**(k)
+        while error < -g1True[i]:
+             error = np.random.normal(0,sigma)
+             
+        g1[i] = g1True[i]*(1 + error)
+        
+         
+    g1 = g1/np.sum(g1)
+    g1True = g1True/np.sum(g1True)
+     
+     
+    true_root, true_outbreak = pgfOutbreak(g1True)
+    #Solving for the pgf
+    root, outbreak = pgfOutbreak(g1)
+    
+    expectU = expectationOfU(g1True, true_root, sigma)
 
         
-
+    
+#%%% Constructing values for contour plot    
+    
 col = 100
 numSD = 10
 inc = 0.01
 maxk = 20
 
-r0_vec = np.arange(1.5, 4, 0.1)
-k_vec = np.arange(0.1, 0.25, 0.01)
+r0_vec = np.arange(1, 5, 0.1)
+k_vec = np.arange(0.01, 1, 0.01)
 
 r0_vals = np.empty((len(r0_vec)*len(k_vec)))
 k_vals = np.empty((len(r0_vec)*len(k_vec)))
 root_vals = np.empty((len(r0_vec)*len(k_vec)))
+
 count = 0
 for r0 in r0_vec:
     for k in k_vec:
@@ -314,4 +350,28 @@ for r0 in r0_vec:
 
 df_roots = pd.DataFrame({'R0': r0_vals, 'k':k_vals, 'Roots':root_vals}) 
 
+#%%%% Contour plot
+
+pivot = df_roots.pivot('k', 'R0', 'Roots')
+
+X = pivot.columns.values
+Y = pivot.index.values
+Z = pivot.values
+
+x,y = np.meshgrid(X, Y)
+
+fig, ax = plt.subplots()
+cs = ax.contour(x, y, Z)
+cbar = fig.colorbar(cs)
+
+
+plt.yscale("log")
+plt.show()
+
+
+#%%%% Retrieving the vertices from the contour plots
+
+vertice_sets = cs.collections[0].get_paths()
+
+plt.bar(vertices_sets, expectations)
 
