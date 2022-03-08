@@ -293,7 +293,7 @@ def main(r0, k, col, numSD, inc, maxk):
     return U[0,0]
 
 
-def solvingForExpectaion(r0, k, sigma):
+def solvingForExpectation(r0, k, sigma):
     maxk = 20
     
     a = 1/k
@@ -322,6 +322,8 @@ def solvingForExpectaion(r0, k, sigma):
     root, outbreak = pgfOutbreak(g1)
     
     expectU = expectationOfU(g1True, true_root, sigma)
+    
+    return expectU
 
         
     
@@ -350,7 +352,38 @@ for r0 in r0_vec:
 
 df_roots = pd.DataFrame({'R0': r0_vals, 'k':k_vals, 'Roots':root_vals}) 
 
+
+#%%%% Constructing the values for the heatmap and the heat map
+
+
+    
+sigma = 0.1
+
+r0_vec = np.arange(1, 5, 0.1)
+k_vec = np.arange(0.01, 1, 0.01)
+
+r0_vals = np.empty((len(r0_vec)*len(k_vec)))
+k_vals = np.empty((len(r0_vec)*len(k_vec)))
+expect_root_vals= np.empty((len(r0_vec)*len(k_vec)))
+
+count = 0
+for r0 in r0_vec:
+    for k in k_vec:
+            
+        r0_vals[count] = r0
+        k_vals[count] = k
+        expect_root_vals[count] = solvingForExpectation(r0, k, sigma)
+        count += 1
+
+df_delta_roots = pd.DataFrame({'R0': r0_vals, 'k':k_vals, 'Expectation':expect_root_vals}) 
+
+heatmap_plot = df_delta_roots.pivot(index = 'k', columns = 'R0', values = 'Expectation' )
+sns.set(rc={'text.usetex': True})
+
+sns.heatmap(heatmap_plot, cmap = "Greens")
+
 #%%%% Contour plot
+
 
 pivot = df_roots.pivot('k', 'R0', 'Roots')
 
@@ -360,13 +393,23 @@ Z = pivot.values
 
 x,y = np.meshgrid(X, Y)
 
+levels = np.arange(0, 1, 0.025)
+
 fig, ax = plt.subplots()
-cs = ax.contour(x, y, Z)
-cbar = fig.colorbar(cs)
+cs = ax.contour(x, y, Z, levels=levels)
 
 
-plt.yscale("log")
-plt.show()
+
+plt.colorbar(cs)
+
+
+plt.clabel(cs, inline=1, fontsize=8)
+
+plt.xlabel("$R_{0}$")
+plt.ylabel("k, dispersion parameter")
+
+plt.imshow()
+
 
 
 #%%%% Retrieving the vertices from the contour plots
