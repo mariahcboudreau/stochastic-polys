@@ -22,6 +22,10 @@ from matplotlib import cm
 import networkx as nx
 from collections import Counter
 
+from matplotlib import cm
+import matplotlib as mpl
+
+
 ######
 #Checked on 1/19/22 - works
 ######
@@ -293,8 +297,11 @@ def main(r0, k, col, numSD, inc, maxk):
     return U[0,0]
 
 
-def solvingForExpectation(r0, k, sigma):
+def solvingForExpectation(params, sigma):
     maxk = 20
+    
+    r0 = params[0]
+    k = params[1]
     
     a = 1/k
     
@@ -355,7 +362,7 @@ df_roots = pd.DataFrame({'R0': r0_vals, 'k':k_vals, 'Roots':root_vals})
 
 #%%%% Constructing the values for the heatmap and the heat map
 
-
+mpl.rcParams.update(mpl.rcParamsDefault)
     
 sigma = 0.1
 
@@ -384,9 +391,20 @@ sns.heatmap(heatmap_plot, cmap = "Greens")
 
 #%%%% Contour plot
 
+mpl.rcParams.update(mpl.rcParamsDefault)
 
-pivot = df_roots.pivot('k', 'R0', 'Roots')
 
+fig, ax = plt.subplots()
+
+####### SEPARATE COLORMAP #########
+norm = mpl.colors.Normalize(vmin=0, vmax=1)
+sm = cm.ScalarMappable(
+        norm = norm,
+        cmap=cm.viridis
+    )
+fig.colorbar(sm, ax = ax, orientation='vertical', label='Root')
+
+####### COUNTOUR PLOT #########
 X = pivot.columns.values
 Y = pivot.index.values
 Z = pivot.values
@@ -395,26 +413,66 @@ x,y = np.meshgrid(X, Y)
 
 levels = np.arange(0, 1, 0.025)
 
-fig, ax = plt.subplots()
-cs = ax.contour(x, y, Z, levels=levels)
+con = ax.contour(x,y, Z, cmap=cm.viridis, norm =norm, levels=levels)
+ax.set_title('Plot of Root')
 
 
+plt.clabel(con, inline=1, fontsize=8)
 
-plt.colorbar(cs)
-
-
-plt.clabel(cs, inline=1, fontsize=8)
-
-plt.xlabel("$R_{0}$")
+plt.xlabel("$R_{0}$, average secondary degree")
 plt.ylabel("k, dispersion parameter")
 
-plt.imshow()
+plt.show()
 
 
 
-#%%%% Retrieving the vertices from the contour plots
+#%%%% Retrieving the vertices from the contour plots (vertice sets have the contour lines from 0 to 1)
 
-vertice_sets = cs.collections[0].get_paths()
+vertice_sets = cs.allsegs
 
-plt.bar(vertices_sets, expectations)
 
+## For 0.325 line
+three_two_five_line = []
+for j in range(len(vertice_sets[13])):
+    for k in range(len(vertice_sets[13][j])):
+        three_two_five_line.append(vertice_sets[13][j][k])
+    
+## For 0.600 line
+six_line = []
+for j in range(len(vertice_sets[24])):
+    for k in range(len(vertice_sets[24][j])):
+        six_line.append(vertice_sets[24][j][k])
+        
+
+    
+## For 0.975 line
+nine_seven_five_line = []
+for j in range(len(vertice_sets[39])):
+    for k in range(len(vertice_sets[39][j])):
+        nine_seven_five_line.append(vertice_sets[39][j][k])
+        
+
+        
+        
+#%%% Constructing the expectation of u for specific contour lines 
+        
+sigma = 0.1
+        
+three_two_five_line_deltaRoot = np.empty((len(three_two_five_line)))
+
+count = 0
+for item in three_two_five_line:
+    three_two_five_line_deltaRoot[count] = solvingForExpectation(item, sigma)
+    
+def totuple(a):
+    try:
+        return tuple(totuple(i) for i in a)
+    except TypeError:
+        return a
+    
+three_two_five_tuples = totuple(three_two_five_line)    
+    
+x = np.arange(len(three_two_five_line))
+
+plt.bar(x, three_two_five_line_deltaRoot)
+plt.show()
