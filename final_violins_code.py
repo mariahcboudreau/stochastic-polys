@@ -359,11 +359,13 @@ for r0 in r0_vec:
 
 df_roots = pd.DataFrame({'R0': r0_vals, 'k':k_vals, 'Roots':root_vals}) 
 
+pivot = df_roots.pivot(index='k', columns = 'R0', values = 'Roots')
+
 
 #%%%%% Make a contour plot for the delta root values 
 
 
-sigma = 0
+sigma = 0.1
 
 r0_vec = np.arange(1, 5, 0.1)
 k_vec = np.arange(0.01, 1, 0.01)
@@ -383,16 +385,16 @@ for r0 in r0_vec:
 
 df_delta_roots = pd.DataFrame({'R0': r0_vals, 'k':k_vals, 'Expectation':delta_root_vals}) 
 
-pivot = df_roots.pivot
+pivot_delta = df_delta_roots.pivot(index='k', columns = 'R0', values = 'Expectation')
 
 #%%%% Constructing the values for the heatmap and the heat map
-
-mpl.rcParams.update(mpl.rcParamsDefault)
+mpl.rcParams['text.usetex'] = False
+#mpl.rcParams.update(mpl.rcParamsDefault)
     
 sigma = 0.1
 
-r0_vec = np.arange(1, 5, 0.1)
-k_vec = np.arange(0.01, 1, 0.01)
+r0_vec = np.arange(2, 5, 0.1)
+k_vec = np.arange(0.175, 1, 0.01)
 
 r0_vals = np.empty((len(r0_vec)*len(k_vec)))
 k_vals = np.empty((len(r0_vec)*len(k_vec)))
@@ -407,13 +409,13 @@ for r0 in r0_vec:
         expect_root_vals[count] = solvingForExpectation([r0, k], sigma)
         count += 1
 
-df_delta_roots = pd.DataFrame({'R0': r0_vals, 'k':k_vals, 'Expectation':expect_root_vals}) 
+df_delta_roots = pd.DataFrame({'avgDegree': r0_vals, 'dispersion':k_vals, 'Expectation':expect_root_vals}) 
 
-heatmap_plot = df_delta_roots.pivot(index = 'k', columns = 'R0', values = 'Expectation' )
-sns.set(rc={'text.usetex': True})
+heatmap_plot = df_delta_roots.pivot(index = 'dispersion', columns = 'avgDegree', values = 'Expectation' )
+
 
 sns.heatmap(heatmap_plot, cmap = "Greens")
-
+plt.show()
 #%%%% Contour plot for Root
 
 mpl.rcParams.update(mpl.rcParamsDefault)
@@ -459,24 +461,24 @@ mpl.rcParams.update(mpl.rcParamsDefault)
 fig, ax = plt.subplots()
 
 ####### SEPARATE COLORMAP #########
-norm = mpl.colors.Normalize(vmin=0, vmax=1)
+norm = mpl.colors.Normalize(vmin=0, vmax=5)
 sm = cm.ScalarMappable(
         norm = norm,
         cmap=cm.viridis
     )
-fig.colorbar(sm, ax = ax, orientation='vertical', label='Root')
+fig.colorbar(sm, ax = ax, orientation='vertical', label='E[$\delta$ Root]')
 
 ####### COUNTOUR PLOT #########
-X = pivot.columns.values
-Y = pivot.index.values
-Z = pivot.values
+X = pivot_delta.columns.values
+Y = pivot_delta.index.values
+Z = pivot_delta.values
 
 x,y = np.meshgrid(X, Y)
 
-levels = np.arange(0, 1, 0.025)
+levels = np.arange(0, 5, 0.1)
 
 con = ax.contour(x,y, Z, cmap=cm.viridis, norm =norm, levels=levels)
-ax.set_title('Plot of E[$\delta$ Root')
+ax.set_title('Plot of E[$\delta$ Root]')
 
 
 plt.clabel(con, inline=1, fontsize=8)
@@ -564,42 +566,42 @@ plt.show()
 
 #%%% Constructing the expectation of U for specific R0 value 
 
-dispersions = np.arange(0.1,1, 0.1)
+# dispersions = np.arange(0.1,1, 0.1)
 
 
-r0_125 = 1.25
-array_125 = np.empty((len(dispersions)))
+# r0_125 = 1.25
+# array_125 = np.empty((len(dispersions)))
 
-count = 0
-for d1 in dispersions:
-    array_125[count] = solvingForExpectation([r0_125, d1], sigma)
-    count += 1
+# count = 0
+# for d1 in dispersions:
+#     array_125[count] = solvingForExpectation([r0_125, d1], sigma)
+#     count += 1
 
 
-r0_2 = 2
-array_2 = np.empty((len(dispersions)))
+# r0_2 = 2
+# array_2 = np.empty((len(dispersions)))
 
-count = 0
-for d2 in dispersions:
-    array_2[count] = solvingForExpectation([r0_2, d2], sigma)
-    count += 1
+# count = 0
+# for d2 in dispersions:
+#     array_2[count] = solvingForExpectation([r0_2, d2], sigma)
+#     count += 1
 
-r0_275 = 3
-array_275 = np.empty((len(dispersions)))
+# r0_275 = 4.5
+# array_275 = np.empty((len(dispersions)))
 
-count = 0
-for d3 in dispersions:
-    array_275[count] = solvingForExpectation([r0_275, d3], sigma)
-    count += 1
+# count = 0
+# for d3 in dispersions:
+#     array_275[count] = solvingForExpectation([r0_275, d3], sigma)
+#     count += 1
     
-plt.scatter(dispersions, array_125) 
+# plt.scatter(dispersions, array_125) 
 
-plt.scatter(dispersions, array_2)
+# plt.scatter(dispersions, array_2)
 
 
-#plt.scatter(dispersions, array_275)
+# plt.scatter(dispersions, array_275)
 
-plt.show()
+# plt.show()
 
 
 
