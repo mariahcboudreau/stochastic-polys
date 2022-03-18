@@ -334,7 +334,7 @@ def solvingForExpectation(params, sigma):
 
         
     
-#%%% Constructing values for contour plot    
+#%%% Constructing values for contour plots  (root and 1-root)  
     
 col = 100
 numSD = 10
@@ -357,9 +357,15 @@ for r0 in r0_vec:
         root_vals[count] = main(r0, k, col, numSD, inc, maxk)
         count += 1
 
+minus_root_vals = 1-root_vals
+
 df_roots = pd.DataFrame({'R0': r0_vals, 'k':k_vals, 'Roots':root_vals}) 
 
-pivot = df_roots.pivot(index='k', columns = 'R0', values = 'Roots')
+df_outbreak = pd.DataFrame({'R0': r0_vals, 'k':k_vals, 'Outbreak':minus_root_vals}) 
+
+pivot_root = df_roots.pivot(index='k', columns = 'R0', values = 'Roots')
+
+pivot_outbreak = df_outbreak.pivot(index='k', columns = 'R0', values = 'Outbreak')
 
 
 #%%%%% Make a contour plot for the delta root values 
@@ -383,45 +389,64 @@ for r0 in r0_vec:
         delta_root_vals[count] = solvingForExpectation([r0, k], sigma)
         count += 1
 
+division_vals = delta_root_vals/root_vals
+division_out_vals = delta_root_vals/minus_root_vals
+
 df_delta_roots = pd.DataFrame({'R0': r0_vals, 'k':k_vals, 'Expectation':delta_root_vals}) 
+
+df_division_roots = pd.DataFrame({'R0': r0_vals, 'k':k_vals, 'Division':division_vals}) 
+
+df_division_outbreak = pd.DataFrame({'R0': r0_vals, 'k':k_vals, 'Division out':division_out_vals}) 
+
+pivot_division = df_division_roots.pivot(index='k', columns = 'R0', values = 'Division')
+
+pivot_division_out = df_division_outbreak.pivot(index='k', columns = 'R0', values = 'Division out')
 
 pivot_delta = df_delta_roots.pivot(index='k', columns = 'R0', values = 'Expectation')
 
-#%%%% Constructing the values for the heatmap and the heat map
-mpl.rcParams['text.usetex'] = False
-#mpl.rcParams.update(mpl.rcParamsDefault)
+# #%%%% Constructing the values for the heatmap and the heat map
+# mpl.rcParams['text.usetex'] = False
+# #mpl.rcParams.update(mpl.rcParamsDefault)
     
-sigma = 0.1
+# sigma = 0.1
 
-r0_vec = np.arange(2, 5, 0.1)
-k_vec = np.arange(0.175, 1, 0.01)
+# r0_vec = np.arange(2, 5, 0.1)
+# k_vec = np.arange(0.175, 1, 0.01)
 
-r0_vals = np.empty((len(r0_vec)*len(k_vec)))
-k_vals = np.empty((len(r0_vec)*len(k_vec)))
-expect_root_vals= np.empty((len(r0_vec)*len(k_vec)))
+# r0_vals = np.empty((len(r0_vec)*len(k_vec)))
+# k_vals = np.empty((len(r0_vec)*len(k_vec)))
+# expect_root_vals= np.empty((len(r0_vec)*len(k_vec)))
 
-count = 0
-for r0 in r0_vec:
-    for k in k_vec:
+# count = 0
+# for r0 in r0_vec:
+#     for k in k_vec:
             
-        r0_vals[count] = r0
-        k_vals[count] = k
-        expect_root_vals[count] = solvingForExpectation([r0, k], sigma)
-        count += 1
+#         r0_vals[count] = r0
+#         k_vals[count] = k
+#         expect_root_vals[count] = solvingForExpectation([r0, k], sigma)
+#         count += 1
 
-df_delta_roots = pd.DataFrame({'avgDegree': r0_vals, 'dispersion':k_vals, 'Expectation':expect_root_vals}) 
+# df_delta_roots = pd.DataFrame({'avgDegree': r0_vals, 'dispersion':k_vals, 'Expectation':expect_root_vals}) 
 
-heatmap_plot = df_delta_roots.pivot(index = 'dispersion', columns = 'avgDegree', values = 'Expectation' )
+# heatmap_plot = df_delta_roots.pivot(index = 'dispersion', columns = 'avgDegree', values = 'Expectation' )
 
 
-sns.heatmap(heatmap_plot, cmap = "Greens")
-plt.show()
-#%%%% Contour plot for Root
+# sns.heatmap(heatmap_plot, cmap = "Greens")
+# plt.show()
+
+
+
+#%%%% CONTOUR PLOTS
+
+
+
+
+ ###### CONTOUR PLOT FOR PGF ROOT ##########
 
 mpl.rcParams.update(mpl.rcParamsDefault)
 
 
-fig, ax = plt.subplots()
+fig, axs = plt.subplots(2,2, sharex=True, sharey= True)
 
 ####### SEPARATE COLORMAP #########
 norm = mpl.colors.Normalize(vmin=0, vmax=1)
@@ -429,27 +454,91 @@ sm = cm.ScalarMappable(
         norm = norm,
         cmap=cm.viridis
     )
-fig.colorbar(sm, ax = ax, orientation='vertical', label='Root')
+fig.colorbar(sm, ax = axs[0,1], orientation='vertical')
+fig.colorbar(sm, ax = axs[1,1], orientation='vertical')
 
-####### COUNTOUR PLOT #########
-X = pivot.columns.values
-Y = pivot.index.values
-Z = pivot.values
+####### CONTOUR PLOT FOR ROOT #########
+X = pivot_root.columns.values
+Y = pivot_root.index.values
+Z = pivot_root.values
 
-x,y = np.meshgrid(X, Y)
+x_r,y_r = np.meshgrid(X, Y)
 
 levels = np.arange(0, 1, 0.025)
 
-con = ax.contour(x,y, Z, cmap=cm.viridis, norm =norm, levels=levels)
-ax.set_title('Plot of Root')
+con_root = axs[0,0].contour(x_r,y_r, Z, cmap=cm.viridis, norm =norm, levels=levels)
+axs[0,0].set_title('PGF Root')
+axs[0,0].clabel(con_root, inline=1, fontsize=6)
+axs[0,0].set_ylabel('k, dispersion parameter')
+
+####### CONTOUR PLOT FOR OUTBREAK #########
+X = pivot_outbreak.columns.values
+Y = pivot_outbreak.index.values
+Z = pivot_outbreak.values
+
+x_o,y_o = np.meshgrid(X, Y)
+
+levels = np.arange(0, 1, 0.025)
+
+con_outbreak = axs[0,1].contour(x_o,y_o, Z, cmap=cm.viridis, norm =norm, levels=levels)
+axs[0,1].set_title('Outbreak size')
+axs[0,1].clabel(con_outbreak, inline=1, fontsize=6)
 
 
-plt.clabel(con, inline=1, fontsize=8)
+###### CONTOUR PLOT FOR DELTA ROOT #######
 
-plt.xlabel("$R_{0}$, average secondary degree")
-plt.ylabel("k, dispersion parameter")
+X = pivot_delta.columns.values
+Y = pivot_delta.index.values
+Z = pivot_delta.values
+
+x_delta,y_delta = np.meshgrid(X, Y)
+
+levels = np.arange(0, 5, 0.1)
+
+con_delta = axs[1,0].contour(x_delta, y_delta, Z, cmap=cm.viridis, norm =norm, levels=levels)
+axs[1,0].set_title('E[$\Delta$ Root]')
+axs[1,0].clabel(con_delta, inline=1, fontsize=6)
+axs[1,0].set_xlabel('$R_{0}$, average secondary degree')
+axs[1,0].set_ylabel('k, dispersion parameter')
+
+###### CONTOUR PLOT FOR DIVISION #######
+
+# X = pivot_division.columns.values
+# Y = pivot_division.index.values
+# Z = pivot_division.values
+
+# x_div,y_div = np.meshgrid(X, Y)
+
+# levels = np.arange(0, 5, 0.1)
+
+# con_div = axs[1,1].contour(x_div, y_div, Z, cmap=cm.viridis, norm =norm, levels=levels)
+# axs[1,1].set_title('E[$\Delta$ Root]/Root')
+# #axs[1,1].clabel(con_div, inline=1, fontsize=6)
+
+
+###### CONTOUR PLOT FOR DIVISION #######
+
+X = pivot_division_out.columns.values
+Y = pivot_division_out.index.values
+Z = pivot_division_out.values
+
+x_div_o,y_div_o = np.meshgrid(X, Y)
+
+levels = np.arange(0, 5, 0.1)
+
+con_div_o = axs[1,1].contour(x_div_o, y_div_o, Z, cmap=cm.viridis, norm =norm, levels=levels)
+axs[1,1].set_title('E[$\Delta$ Root]/Outbreak')
+axs[1,1].clabel(con_div_o, inline=1, fontsize=6)
+axs[1,1].set_xlabel('$R_{0}$s, average secondary degree')
+
+
+    
+    
+
 
 plt.show()
+
+
 
 
 
@@ -469,16 +558,7 @@ sm = cm.ScalarMappable(
 fig.colorbar(sm, ax = ax, orientation='vertical', label='E[$\delta$ Root]')
 
 ####### COUNTOUR PLOT #########
-X = pivot_delta.columns.values
-Y = pivot_delta.index.values
-Z = pivot_delta.values
 
-x,y = np.meshgrid(X, Y)
-
-levels = np.arange(0, 5, 0.1)
-
-con = ax.contour(x,y, Z, cmap=cm.viridis, norm =norm, levels=levels)
-ax.set_title('Plot of E[$\delta$ Root]')
 
 
 plt.clabel(con, inline=1, fontsize=8)
