@@ -529,7 +529,7 @@ levels = np.arange(0, 5, 0.1)
 con_div_o = axs[1,1].contour(x_div_o, y_div_o, Z, cmap=cm.viridis, norm =norm, levels=levels)
 axs[1,1].set_title('E[$\Delta$ Root]/Outbreak')
 axs[1,1].clabel(con_div_o, inline=1, fontsize=6)
-axs[1,1].set_xlabel('$R_{0}$s, average secondary degree')
+axs[1,1].set_xlabel('$R_{0}$, average secondary degree')
 
 
     

@@ -46,7 +46,7 @@ def setDiff(fir, sec):
     return diff
 
 
-def plottingInd(n, deg, pgfSimOutbreak, giantComps, winklerMeasureInfinite, winklerMeasure, true_outbreak):
+def plottingInd(n, deg, pgfSimOutbreak, giantComps, winklerMeasure, true_outbreak):
     
     fig2 = plt.figure(figsize=(10,7))
 
@@ -61,7 +61,7 @@ def plottingInd(n, deg, pgfSimOutbreak, giantComps, winklerMeasureInfinite, wink
     
     ncolor = 0
     for c in range(0,len(pgfSimOutbreak)):
-        plt.errorbar(true_outbreak[c], true_outbreak[c], yerr = winklerMeasureInfinite[c], ecolor = starColors[ncolor], color =starColors[ncolor], label = starLabels[ncolor], marker = '*', markersize =20)
+        plt.errorbar(true_outbreak[c], true_outbreak[c], ecolor = starColors[ncolor], color =starColors[ncolor], label = starLabels[ncolor], marker = '*', markersize =20)
         plt.errorbar(pgfSimOutbreak[c,:],giantComps[c,:], xerr= winklerMeasure[c,:], color=colors[ncolor], ecolor = 'grey', label=labels[ncolor], fmt = "o", alpha = 0.5)
        
         ncolor += 1
@@ -89,6 +89,40 @@ def derivative(p_kCoeff):
         
    
     return primeCoeff 
+
+
+def ERCoeff(maxk, prob, n):
+    binomCoeff = []
+    
+    for k in range(maxk):
+        binomCoeff.append(scipy.special.binom(n-1, k)*prob**(k)*(1-prob)**(n-1-k))
+    
+    return binomCoeff
+
+def ER_FSE_Sim(n, prob):
+    G = nx.erdos_renyi_graph(n, prob)
+    
+    # Calculate N_k frequencies
+
+    degrees = []
+    for v in nx.nodes(G):
+        degrees.append(nx.degree(G, v))
+        
+    N_k = []    
+    for degVal in range(max(degrees)): #
+        N_k.append(degrees.count(degVal))
+    
+    p_k_sim = np.true_divide(N_k, n)  
+    
+    #Normalize
+    if sum(p_k_sim) == 0:
+        return [0,0], G
+    else:
+        p_k_sim = np.true_divide(p_k_sim, sum(p_k_sim))
+    
+    
+    return p_k_sim, G
+
 
 
 def selfConsistant(g1):
@@ -130,12 +164,214 @@ def selfConsistant(g1):
     
     
 
-def pgfOutbreak(g1Outbreak, trunc, infinite):
+def pgfOutbreak(g1Outbreak):
     
     
-    root = selfConsistant(g1Outbreak, trunc, infinite)
+    root = selfConsistant(g1Outbreak)
     
     outbreak = 1-root
     
     return root, outbreak
+
+
+def prepSelfconsistent(coeffs):
+    
+    a_array = np.array(coeffs)
+    
+    if a_array.size > 1:
+       if a_array.size >= 2: 
+           a_array[1] = a_array[1] - 1
+           a_prime_array = derivative(a_array)
+       else:
+           a_array = np.append(a_array, -1)
+           a_prime_array= derivative(a_array)
+    else:
+       a_array = np.array([0,-1])
+       a_prime_array = np.array([-1])    
+        
+    a_array =  a_array[ a_array != 0] #takes out the zeros for the Winkler computation
+
+    
+    return a_array, a_prime_array
+
+
+def definingSigma(degrees, true_degs, size):
+    errors = np.empty((len(degrees)))
+    
+    if len(degrees) == 0:
+        errors = np.zeros((2))
+    else:
+        for j in range(len(degrees)):
+            errors[j] = np.abs(degrees[j] - true_degs[j])
+        
+    mean = np.mean(errors)
+    
+    temp = np.empty((len(errors)))
+    for i in range(len(errors)):
+        temp[i] = (errors[i]-mean)**2
+    
+    sample_var = temp/size
+    
+    return np.sqrt(sample_var)
+
+def expectationOfU_FSE(a_i_coeff, true_coeff, true_root, pop):
+    
+    sigma = definingSigma(a_i_coeff, true_coeff, pop)
+    
+    
+    a_i, prime_coeff = prepSelfconsistent(a_i_coeff)
+    
+    
+    # making phi a vector the same size as the coefficients
+    phi = np.zeros(a_i.size)
+    for k in range(a_i.size):
+        phi[k] = true_root**k
+
+   
+    prime_coeff = np.flip(prime_coeff)
+    prime = np.poly1d(prime_coeff)
+    
+    
+    
+    value = -np.log(true_root) - np.log(np.abs(prime(true_root))) + np.log(np.sqrt(2)) + np.log(sigma) + np.log(np.linalg.norm(phi,2)) - np.log(np.sqrt(math.pi))
+    
+    
+    return np.exp(value)
+
+
+def runFSE(excessDegree, numTrials, exp, maxk):
+
+    
+    for N in range(1, exp+1):    
+        
+        
+        
+        outbreakSize = np.zeros((len(excessDegree), numTrials)) #Creating matrices 
+        giantComps = np.zeros((len(excessDegree), numTrials))
+        pgfSimOutbreak = np.zeros((len(excessDegree), numTrials))
+        true_outbreak = np.zeros(len(excessDegree))
+        winklerMeasure = np.zeros((len(excessDegree), numTrials))
+        polyLengths = np.zeros((len(excessDegree)*numTrials + len(excessDegree)))
+        plotWink = np.zeros((len(excessDegree), 4))
+        plotWinkInf = np.zeros((len(excessDegree), 4))
+        
+        count = 0
+        for deg in excessDegree:
+            
+            n = 10**(N) # population size
+                
+            prob = deg/(n-1) # probability of connection 
+           # print('Degree: %.2f' %deg)
+            
+            # Calculating the true outbreak from a ER graph
+            true_p_k_infinite_G0 = ERCoeff(maxk, prob, n)
+            
+            
+            #Derivative
+            true_prime_infinite_G1 = derivative(true_p_k_infinite_G0)
+            
+            if sum(true_prime_infinite_G1) != 0:
+                true_prime_infinite_G1 = true_prime_infinite_G1/sum(true_prime_infinite_G1)
+           
+            true_root, true_outbreak[count]= pgfOutbreak(true_prime_infinite_G1)
+            
+          
+            
+           
+           
+       
+            
+                   
+            
+        
+    
+            converts = np.zeros((numTrials))
+            
+            
+            for t in range(0, numTrials):
+                
+                
+                p_k_sim_G0, G = ER_FSE_Sim(n, prob)
+                
+                    
+                p_k_sim_G1 = derivative(p_k_sim_G0) # G1 for the simulations
+                
+                
+                if p_k_sim_G1.size == 0:
+                    p_k_sim_G1 = np.array([0,0])
+                elif p_k_sim_G1.size >= 1:
+                    if np.sum(p_k_sim_G1) != 0:
+                        p_k_sim_G1 = p_k_sim_G1/np.sum(p_k_sim_G1)
+                    
+                
+                    
+                 
+            
+                root, outbreak = pgfOutbreak(p_k_sim_G1)
+                
+                pgfSimOutbreak[count, t] = outbreak
+                
+                
+                
+                # Find all neighbors
+                neighbors = []
+                for i in range(0,n):
+                    temp = list(G.neighbors(i))
+                    neighbors.append(temp)
+                
+                
+                x = np.zeros(n) # index which connect comp a node is a part of
+                numComp = 0 # Number of components tat the start
+                k = [] # Nodes dealt with
+                
+                # Loop over nodes to see which component they are in
+                for j in range(0,n):
+                    if x[j] == 0:
+                        numComp = numComp + 1
+                        v = []
+                        v.append(j) # set of nodes in the current component
+                        while v != []:
+                            x[v[0]] = numComp     # assigning node to its component
+                            k = Union(k,v[0])              # Combines current node to the comp
+                            p = setDiff(neighbors[v[0]], k)# Finds the neighbors not in comp yet
+                            v = setDiff(v, v[0])           # Gets ride of node in stack
+                            v = Union(v,p) # preps nodes to be added to component
+                            
+                            
+                            
+                            
+                # Figure out size of components    
+                
+                c = np.zeros(int(max(x))) # Number of components  
+                
+                lengths = Counter(x).values() # Sizes of components
+                
+                outbreakSize[count, t] = max(lengths) # Size of largest component 
+                
+                giantComps[count, t] = outbreakSize[count,t]/n# Percentage of population
+                
+                
+                
+                winklerMeasure[count, t]=  expectationOfU_FSE(p_k_sim_G1, true_prime_infinite_G1, true_root, n)
+        
+                count += 1 
+                                                                                    
+                    
+                    
+                        
+           
+        plottingInd(n, deg, pgfSimOutbreak, giantComps,  winklerMeasure, true_outbreak)
+        
+        
+        
+        
+        
+excessDegree = [.5, 1, 1.5, 2]
+numTrials = 100
+exponent = 3
+maxk = 20
+runFSE(excessDegree, numTrials, exponent, maxk)
+
+
+#%%%%% bifurcation diagram 
 
