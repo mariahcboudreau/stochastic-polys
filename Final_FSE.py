@@ -212,7 +212,7 @@ def definingSigma(degrees, true_degs, size):
     
     sample_var = temp/size
     
-    return np.sqrt(sample_var)
+    return np.sqrt(sample_var[0])
 
 def expectationOfU_FSE(a_i_coeff, true_coeff, true_root, pop):
     
@@ -232,11 +232,33 @@ def expectationOfU_FSE(a_i_coeff, true_coeff, true_root, pop):
     prime = np.poly1d(prime_coeff)
     
     
-    
-    value = -np.log(true_root) - np.log(np.abs(prime(true_root))) + np.log(np.sqrt(2)) + np.log(sigma) + np.log(np.linalg.norm(phi,2)) - np.log(np.sqrt(math.pi))
+    if sigma == 0:
+        value = 0
+    else:
+        value = -np.log(true_root) - np.log(np.abs(prime(true_root))) + np.log(np.sqrt(2)) + np.log(sigma) + np.log(np.linalg.norm(phi,2)) - np.log(np.sqrt(math.pi))
     
     
     return np.exp(value)
+
+
+def prepLogFunction(coeffs):
+    small = min(np.abs(coeffs))
+    
+    coeffs= np.delete(coeffs , np.where(coeffs == small))
+    
+    coeffs_fix = np.true_divide(small, coeffs)
+    
+    return coeffs_fix, small
+
+def expectationOfCoeff(a_i_coeff, sigma):
+    
+    a_i, prime_coeff = prepSelfconsistent(a_i_coeff)
+    
+    aInverse, smallCoef = prepLogFunction(a_i)
+    
+    bottomValue = np.log(sigma) + np.log(np.sqrt(2)) - np.log(np.sqrt(math.pi)) + np.log(np.linalg.norm(aInverse,1))
+    
+    return np.exp(bottomValue)
 
 
 def runFSE(excessDegree, numTrials, exp, maxk):
@@ -255,9 +277,10 @@ def runFSE(excessDegree, numTrials, exp, maxk):
         plotWink = np.zeros((len(excessDegree), 4))
         plotWinkInf = np.zeros((len(excessDegree), 4))
         
-        count = 0
-        for deg in excessDegree:
+        
+        for deg, count in zip(excessDegree, range(len(excessDegree))):
             
+                
             n = 10**(N) # population size
                 
             prob = deg/(n-1) # probability of connection 
@@ -354,14 +377,14 @@ def runFSE(excessDegree, numTrials, exp, maxk):
                 
                 winklerMeasure[count, t]=  expectationOfU_FSE(p_k_sim_G1, true_prime_infinite_G1, true_root, n)
         
-                count += 1 
+                
                                                                                     
                     
                     
                         
            
         plottingInd(n, deg, pgfSimOutbreak, giantComps,  winklerMeasure, true_outbreak)
-        
+        print(winklerMeasure)
         
         
         
@@ -374,4 +397,162 @@ runFSE(excessDegree, numTrials, exponent, maxk)
 
 
 #%%%%% bifurcation diagram 
+
+
+   
+import numpy as np
+import pandas as pd
+import scipy
+import math
+from scipy import stats
+import matplotlib.pyplot as plt
+import networkx as nx
+from collections import Counter
+
+def plotting_S_and_k():
+    avgK = np.linspace(0,3, num=31)
+    numTrials = 100
+    exp = 3
+    maxk = 20 
+    #This will be the plot for the threshold 
+    for N in range(1, exp+1):    
+        outbreakSize = np.zeros((len(avgK), numTrials)) #Creating matrices 
+        giantComps = np.zeros((len(avgK), numTrials))
+        pgfSimOutbreak = np.zeros((len(avgK), numTrials))
+        true_outbreak = np.zeros(len(avgK))
+        winklerMeasure = np.zeros((len(avgK), numTrials))
+        polyLengths = np.zeros((len(avgK)*numTrials + len(avgK)))
+        
+        count = 0
+        leng = 0
+        for deg in avgK:
+            
+            n = 10**(N) # population size
+                
+            prob = deg/(n-1) # probability of connection 
+            
+            # Calculating the true outbreak from a ER graph
+            true_p_k_infinite_G0 = ERCoeff(maxk, prob, n)
+            
+            
+            #Derivative
+            true_prime_infinite_G1 = derivative(true_p_k_infinite_G0)
+            
+            if sum(true_prime_infinite_G1) != 0:
+                true_prime_infinite_G1 = true_prime_infinite_G1/sum(true_prime_infinite_G1)
+           
+            true_root, true_outbreak[count] = pgfOutbreak(true_prime_infinite_G1)
+            
+            
+            
+            
+            
+            for t in range(0, numTrials):
+                
+                p_k_sim_G0, G = ER_FSE_Sim(n, prob)
+                
+                    
+                p_k_sim_G1 = derivative(p_k_sim_G0) # G1 for the simulations
+                
+                
+                if p_k_sim_G1.size == 0:
+                    p_k_sim_G1 = np.array([0,0])
+                elif p_k_sim_G1.size >= 1:
+                    if np.sum(p_k_sim_G1) != 0:
+                        p_k_sim_G1 = p_k_sim_G1/np.sum(p_k_sim_G1)
+                    
+                
+                    
+                 
+            
+                root, outbreak = pgfOutbreak(p_k_sim_G1)
+                
+                pgfSimOutbreak[count, t] = outbreak
+                
+                
+                
+                # Find all neighbors
+                neighbors = []
+                for i in range(0,n):
+                    temp = list(G.neighbors(i))
+                    neighbors.append(temp)
+                
+                
+                x = np.zeros(n) # index which connect comp a node is a part of
+                numComp = 0 # Number of components tat the start
+                k = [] # Nodes dealt with
+                
+                # Loop over nodes to see which component they are in
+                for j in range(0,n):
+                    if x[j] == 0:
+                        numComp = numComp + 1
+                        v = []
+                        v.append(j) # set of nodes in the current component
+                        while v != []:
+                            x[v[0]] = numComp     # assigning node to its component
+                            k = Union(k,v[0])              # Combines current node to the comp
+                            p = setDiff(neighbors[v[0]], k)# Finds the neighbors not in comp yet
+                            v = setDiff(v, v[0])           # Gets ride of node in stack
+                            v = Union(v,p) # preps nodes to be added to component
+                            
+                            
+                            
+                            
+                # Figure out size of components    
+                
+                c = np.zeros(int(max(x))) # Number of components  
+                
+                lengths = Counter(x).values() # Sizes of components
+                
+                outbreakSize[count, t] = max(lengths) # Size of largest component 
+                
+                giantComps[count, t] = outbreakSize[count,t]/n# Percentage of population
+                
+                
+                
+                winklerMeasure[count, t]=  expectationOfU_FSE(p_k_sim_G1, true_prime_infinite_G1, true_root, n)
+                leng+=1
+                #(1/np.abs(prime(true_root))) * np.abs(np.linalg.norm([phi(true_root)], 2))/(true_root * np.linalg.norm([denomP], 1))* np.sqrt(2/(math.pi*n)*(denomP))
+            
+            
+            
+            count += 1
+        
+        fig2 = plt.figure(figsize=(10,7))
+        
+        
+     
+            
+            
+        avgGC = np.zeros((len(avgK)))    
+        for row in range(len(avgK)):
+            avgGC[row] = sum(giantComps[row][:])/numTrials 
+            
+        avgWinkler = np.zeros((len(avgK)))    
+        for row in range(len(avgK)):
+            avgWinkler[row] = sum(winklerMeasure[row][:])/numTrials 
+            
+        #avgWinklerInf = sum(winklerMeasureInfinite)/len(avgK)
+
+        
+        plt.axis([0,3,0,1])
+        plt.title("Population N = %d, Outbreak Threshold" %(n))
+        plt.xlabel("<k>")
+        plt.ylabel("S")
+        
+        print(winklerMeasure)
+        
+        plt.plot(avgK, true_outbreak, color = 'black')
+        plt.errorbar(avgK, true_outbreak, yerr = avgWinkler, color = 'black', ecolor = 'black')
+        plt.scatter(avgK, avgGC)
+        #plt.errorbar(avgK, avgGC, yerr= avgWinkler,  ecolor = 'grey', fmt = 'o')
+        plt.show()
+        
+        
+        
+        
+plotting_S_and_k()
+
+
+# Clean this code up
 
