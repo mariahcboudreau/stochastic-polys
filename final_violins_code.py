@@ -217,7 +217,7 @@ def violins(roots):
     
     
     plt.figure(figsize = (7,7))
-    plt.title("PGF Sensitivity")
+    plt.ylim(0.5, 1)
     plt.xlabel("Standard Deviation (times 0.01)")
     plt.ylabel("Root U")
     ax = sns.boxplot(data=df_roots, color = "seagreen") 
@@ -292,9 +292,9 @@ def main(r0, k, col, numSD, inc, maxk):
     
     #print(slopes(standDevs, sdValues, r0, k))
     #print(standDevs)
-    #violins(U)
+    violins(U)
     #ridgePlots(U)    
-    return U[0,0]
+    #return U[0,0]
 
 
 def solvingForExpectation(params, sigma):
@@ -333,6 +333,34 @@ def solvingForExpectation(params, sigma):
     return expectU
 
         
+#%%% Constructing box plots/ridgeplots
+    
+r0 = 1.9
+k = 0.21
+col = 100
+numSD = 20
+inc = 0.01
+maxk = 20
+# need to incorporate the noisy values into the measure
+UValues = main(r0, k, col, numSD, inc, maxk)
+
+
+
+    
+r0 = 3.7
+k = 0.14
+col = 100
+numSD = 20
+inc = 0.01
+maxk = 20
+# need to incorporate the noisy values into the measure
+UValues = main(r0, k, col, numSD, inc, maxk)
+
+
+
+
+
+
     
 #%%% Constructing values for contour plots  (root and 1-root)  
     
