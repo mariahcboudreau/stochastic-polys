@@ -195,15 +195,17 @@ def prepSelfconsistent(coeffs):
     return a_array, a_prime_array
 
 
-def definingSigma(degrees, true_degs, size):
-    errors = np.empty((len(degrees)))
+def definingSigma(degrees, true_degs, size, maxk): # could use analytical value or use standard length. 
+    errors = np.empty((maxk-1))
     
-    if len(degrees) == 0:
-        errors = np.zeros((2))
-    else:
-        for j in range(len(degrees)):
-            errors[j] = np.abs(degrees[j] - true_degs[j])
-        
+    # pad the degrees array to include 0s up to 20 
+    if len(degrees) < 20:
+        N = 20 - len(degrees)
+        degrees = np.pad(degrees, (0, N), 'constant')
+    
+    for j in range(maxk-1):
+        errors[j] = np.abs(degrees[j] - true_degs[j])
+    
     mean = np.mean(errors)
     
     temp = np.empty((len(errors)))
@@ -214,10 +216,13 @@ def definingSigma(degrees, true_degs, size):
     
     return np.sqrt(sample_var[0])
 
-def expectationOfU_FSE(a_i_coeff, true_coeff, true_root, pop):
+def expectationOfU_FSE(a_i_coeff, true_coeff, true_root, pop, maxk):
     
-    sigma = definingSigma(a_i_coeff, true_coeff, pop)
+    #sigma = definingSigma(a_i_coeff, true_coeff, pop, maxk)
+    temp = a_i_coeff/pop
+    temp = np.sqrt(temp)
     
+    sigma = np.sum(temp)
     
     a_i, prime_coeff = prepSelfconsistent(a_i_coeff)
     
@@ -330,7 +335,7 @@ def runFSE(excessDegree, numTrials, exp, maxk):
                     
                  
             
-                root, outbreak = pgfOutbreak(p_k_sim_G1)
+                root, outbreak = pgfOutbreak(p_k_sim_G1) 
                 
                 pgfSimOutbreak[count, t] = outbreak
                 
@@ -375,7 +380,7 @@ def runFSE(excessDegree, numTrials, exp, maxk):
                 
                 
                 
-                winklerMeasure[count, t]=  expectationOfU_FSE(p_k_sim_G1, true_prime_infinite_G1, true_root, n)
+                winklerMeasure[count, t]=  expectationOfU_FSE(p_k_sim_G1, true_prime_infinite_G1, true_root, n, maxk)
         
                 
                                                                                     
@@ -510,7 +515,7 @@ def plotting_S_and_k():
                 
                 
                 
-                winklerMeasure[count, t]=  expectationOfU_FSE(p_k_sim_G1, true_prime_infinite_G1, true_root, n)
+                winklerMeasure[count, t]=  expectationOfU_FSE(p_k_sim_G1, true_prime_infinite_G1, true_root, n, maxk)
                 leng+=1
                 #(1/np.abs(prime(true_root))) * np.abs(np.linalg.norm([phi(true_root)], 2))/(true_root * np.linalg.norm([denomP], 1))* np.sqrt(2/(math.pi*n)*(denomP))
             
