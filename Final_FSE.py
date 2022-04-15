@@ -195,6 +195,15 @@ def prepSelfconsistent(coeffs):
     return a_array, a_prime_array
 
 
+def prepLogFunction(coeffs):
+    small = min(np.abs(coeffs))
+    
+    coeffs= np.delete(coeffs , np.where(coeffs == small))
+    
+    coeffs_fix = np.true_divide(small, coeffs)
+    
+    return coeffs_fix, small
+
 def definingSigma(degrees, true_degs, size, maxk): # could use analytical value or use standard length. 
     errors = np.empty((maxk-1))
     
@@ -216,13 +225,16 @@ def definingSigma(degrees, true_degs, size, maxk): # could use analytical value 
     
     return np.sqrt(sample_var[0])
 
-def expectationOfU_FSE(a_i_coeff, true_coeff, true_root, pop, maxk):
+def expectationOfU_FSE(a_i_coeff, true_coeff, true_root, pop, maxk, simSD):
     
-    #sigma = definingSigma(a_i_coeff, true_coeff, pop, maxk)
-    temp = a_i_coeff/pop
-    temp = np.sqrt(temp)
-    
-    sigma = np.sum(temp)
+    if simSD:
+        sigma = definingSigma(a_i_coeff, true_coeff, pop, maxk)
+    else: 
+        temp = 2*(true_coeff - true_coeff**2)
+        temp = temp/(pop*math.pi)
+        sigma = np.sum(np.sqrt(temp))
+        
+    #print("Sigma analytical: %.2f with pop of %d" %(sigma, pop))
     
     a_i, prime_coeff = prepSelfconsistent(a_i_coeff)
     
@@ -232,18 +244,22 @@ def expectationOfU_FSE(a_i_coeff, true_coeff, true_root, pop, maxk):
     for k in range(a_i.size):
         phi[k] = true_root**k
 
-   
+    
+    
     prime_coeff = np.flip(prime_coeff)
     prime = np.poly1d(prime_coeff)
+    
+    
     
     
     if sigma == 0:
         value = 0
     else:
-        value = -np.log(true_root) - np.log(np.abs(prime(true_root))) + np.log(np.sqrt(2)) + np.log(sigma) + np.log(np.linalg.norm(phi,2)) - np.log(np.sqrt(math.pi))
+        # value = -np.log(true_root) - np.log(np.abs(prime(true_root))) + np.log(np.sqrt(2)) + np.log(sigma) + np.log(np.linalg.norm(phi,2)) - np.log(np.sqrt(math.pi))
+        value = 1/(true_root*np.abs(prime(true_root)))*(np.sqrt(2)*sigma*np.linalg.norm(phi,2))/(np.sqrt(math.pi))
     
     
-    return np.exp(value)
+    return value, sigma, prime(true_root), np.linalg.norm(phi,2), true_root
 
 
 def prepLogFunction(coeffs):
@@ -380,16 +396,14 @@ def runFSE(excessDegree, numTrials, exp, maxk):
                 
                 
                 
-                winklerMeasure[count, t]=  expectationOfU_FSE(p_k_sim_G1, true_prime_infinite_G1, true_root, n, maxk)
-        
-                
-                                                                                    
+                winklerMeasure[count, t]=  expectationOfU_FSE(p_k_sim_G1, true_prime_infinite_G1, true_root, n, maxk, False)
+                                                               
                     
                     
                         
            
         plottingInd(n, deg, pgfSimOutbreak, giantComps,  winklerMeasure, true_outbreak)
-        print(winklerMeasure)
+        #print(winklerMeasure)
         
         
         
@@ -418,7 +432,7 @@ def plotting_S_and_k():
     avgK = np.linspace(0,3, num=31)
     numTrials = 100
     exp = 3
-    maxk = 20 
+    maxk = 20
     #This will be the plot for the threshold 
     for N in range(1, exp+1):    
         outbreakSize = np.zeros((len(avgK), numTrials)) #Creating matrices 
@@ -426,6 +440,10 @@ def plotting_S_and_k():
         pgfSimOutbreak = np.zeros((len(avgK), numTrials))
         true_outbreak = np.zeros(len(avgK))
         winklerMeasure = np.zeros((len(avgK), numTrials))
+        sigmas = np.zeros((len(avgK), numTrials))
+        primes = np.zeros((len(avgK), numTrials))
+        norms = np.zeros((len(avgK), numTrials))
+        truRoot = np.zeros((len(avgK), numTrials))
         polyLengths = np.zeros((len(avgK)*numTrials + len(avgK)))
         
         count = 0
@@ -515,7 +533,7 @@ def plotting_S_and_k():
                 
                 
                 
-                winklerMeasure[count, t]=  expectationOfU_FSE(p_k_sim_G1, true_prime_infinite_G1, true_root, n, maxk)
+                winklerMeasure[count, t], sigmas[count, t], primes[count, t], norms[count, t], truRoot[count,t] =  expectationOfU_FSE(p_k_sim_G1, true_prime_infinite_G1, true_root, n, maxk, False, deg)
                 leng+=1
                 #(1/np.abs(prime(true_root))) * np.abs(np.linalg.norm([phi(true_root)], 2))/(true_root * np.linalg.norm([denomP], 1))* np.sqrt(2/(math.pi*n)*(denomP))
             
@@ -526,31 +544,40 @@ def plotting_S_and_k():
         fig2 = plt.figure(figsize=(10,7))
         
         
-     
-            
+        
+        winklerMeasure[winklerMeasure == np.inf] = 0 
             
         avgGC = np.zeros((len(avgK)))    
         for row in range(len(avgK)):
             avgGC[row] = sum(giantComps[row][:])/numTrials 
             
+          
         avgWinkler = np.zeros((len(avgK)))    
         for row in range(len(avgK)):
             avgWinkler[row] = sum(winklerMeasure[row][:])/numTrials 
             
+       
         #avgWinklerInf = sum(winklerMeasureInfinite)/len(avgK)
 
+        print(winklerMeasure)
+        print(sigmas)
+        print(norms)
+        print(primes)
+        print(truRoot)
         
         plt.axis([0,3,0,1])
         plt.title("Population N = %d, Outbreak Threshold" %(n))
-        plt.xlabel("<k>")
+        plt.xlabel("Average secondary degree")
         plt.ylabel("S")
         
-        print(winklerMeasure)
+        #print(winklerMeasure)
         
-        plt.plot(avgK, true_outbreak, color = 'black')
+        #plt.plot(avgK, true_outbreak, color = 'black')
         plt.errorbar(avgK, true_outbreak, yerr = avgWinkler, color = 'black', ecolor = 'black')
-        plt.scatter(avgK, avgGC)
-        #plt.errorbar(avgK, avgGC, yerr= avgWinkler,  ecolor = 'grey', fmt = 'o')
+        plt.scatter(avgK, avgGC, color='black')
+        
+        for col in range(numTrials):
+            plt.scatter(avgK, giantComps[:,col], alpha= 0.05, color = 'blue')
         plt.show()
         
         
