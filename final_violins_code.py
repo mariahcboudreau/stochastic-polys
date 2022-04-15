@@ -261,7 +261,7 @@ def main(r0, k, col, numSD, inc, maxk):
             g1 = g1/np.sum(g1)
             g1True = g1True/np.sum(g1True)
             
-            print(np.sd(g1))
+            #print(np.sd(g1))
             # Make sure that the standard deviation is what we are saying it is
             
             #trial = np.divide((g1True - g1), g1True)
@@ -295,9 +295,9 @@ def main(r0, k, col, numSD, inc, maxk):
     
     #print(slopes(standDevs, sdValues, r0, k))
     #print(standDevs)
-    violins(U)
+    #violins(U)
     #ridgePlots(U)    
-    #return U[0,0]
+    return U[0,0]
 
 
 def solvingForExpectation(params, sigma):
@@ -498,7 +498,7 @@ x_r,y_r = np.meshgrid(X, Y)
 levels = np.arange(0, 1, 0.025)
 
 con_root = axs[0,0].contour(x_r,y_r, Z, cmap=cm.viridis, norm =norm, levels=levels)
-axs[0,0].set_title('PGF Root')
+axs[0,0].set_title('1-Outbreak')
 axs[0,0].clabel(con_root, inline=1, fontsize=6)
 axs[0,0].set_ylabel('k, dispersion parameter')
 
@@ -603,7 +603,7 @@ plt.show()
 
 #%%%% Retrieving the vertices from the contour plots (vertice sets have the contour lines from 0 to 1)
 
-vertice_sets = cs.allsegs
+vertice_sets = con_root.allsegs
 
 
 ## For 0.325 line
@@ -632,12 +632,18 @@ for j in range(len(vertice_sets[39])):
 #%%% Constructing the expectation of u for specific contour lines 
         
 sigma = 0.1
+col = 100
+numSD = 1
+maxk = 20
         
 three_two_five_line_deltaRoot = np.empty((len(three_two_five_line)))
+
+three_two_five_line_sds = np.empty((len(three_two_five_line)))
 
 count = 0
 for item in three_two_five_line:
     three_two_five_line_deltaRoot[count] = solvingForExpectation(item, sigma)
+    three_two_five_line_sds = main(item[0], item[1,],col,numSD,sigma,maxk)
     count += 1
   
 six_line_deltaRoot = np.empty((len(six_line))) 
