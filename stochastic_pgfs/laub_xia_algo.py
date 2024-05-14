@@ -59,34 +59,81 @@ def is_real(coefs):
     return np.isclose(np.imag(coefs), 0)
 
 
-
-def kappa_SCE(my_poly_coef, K=10, conditions=None, delta=0.001):
+def l_x_algo(my_poly_coef, is_pgf, K = 10, conditions = None, delta = 0.001):
     if conditions is None:
         conditions = []
-    SCE_list = []
+    all_og_roots = np.empty(K)
+    all_perturbed_roots = np.empty(K)
     N = len(my_poly_coef)
     vec_list = [generate_sphere_point(N) for _ in range(K)] # Random error
     Z = np.column_stack(vec_list)
+
+    SCE_list = []
     
+    
+    # Root solving and error
     for i in range(K):
-        og_roots = polynomial_roots(my_poly_coef)
-        all_conditions = np.array([True] * len(og_roots))
-        if conditions: #Double checks they are roots
-            all_conditions = np.logical_and.reduce([cond(og_roots) for cond in conditions])
-        
-        og_roots = og_roots[all_conditions]
-        delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
-        perturbed_coefs = my_poly_coef * (1 + delta * Z[:, i])
-        perturbed_roots = polynomial_roots(perturbed_coefs)[all_conditions]
-        
+        if is_pgf:
+            my_poly_coef = make_G_u_minus_u(my_poly_coef)
+            og_roots = polynomial_roots(my_poly_coef)
+
+            all_conditions = np.array([True] * len(og_roots))
+            if conditions: #Double checks they are roots
+                all_conditions = np.logical_and.reduce([cond(og_roots) for cond in conditions])
+            og_roots = og_roots[all_conditions]
+            delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
+
+            perturbed_coefs = my_poly_coef * (1 + delta * Z[:, i])
+            perturbed_coefs = make_G_u_minus_u(perturbed_coefs)
+            
+
+        else:
+            og_roots = polynomial_roots(my_poly_coef)
+            all_conditions = np.array([True] * len(og_roots))
+            if conditions: #Double checks they are roots
+                all_conditions = np.logical_and.reduce([cond(og_roots) for cond in conditions])
+            og_roots = og_roots[all_conditions]
+            delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
+            perturbed_coefs = my_poly_coef * (1 + delta * Z[:, i])
+
+        perturbed_roots = polynomial_roots(perturbed_coefs)[all_conditions][0]
         SCE_list.append(np.abs(og_roots - perturbed_roots) / delta * np.abs(og_roots))
     
+    
+
+        # Both conditions perform this step after preprocessing
+        all_perturbed_roots[i-1] = np.min(perturbed_roots)
+
+        all_og_roots[i-1] = np.min(og_roots)
+
     normed_sce = np.linalg.norm(SCE_list, axis=0)
-    return np.mean(normed_sce)  # Simplified to return the mean as a scalar
+    return all_og_roots, all_perturbed_roots, np.mean(normed_sce)
+
+# def kappa_SCE(my_poly_coef, is_pgf, K=10, conditions=None, delta=0.001 ):
+    # if conditions is None:
+    #     conditions = []
+    
+    # N = len(my_poly_coef)
+    # vec_list = [generate_sphere_point(N) for _ in range(K)] # Random error
+    # Z = np.column_stack(vec_list)
+    
+    # for i in range(K):
+    #     og_roots = polynomial_roots(my_poly_coef)
+    #     all_conditions = np.array([True] * len(og_roots))
+    #     if conditions: #Double checks they are roots
+    #         all_conditions = np.logical_and.reduce([cond(og_roots) for cond in conditions])
+        
+    #     og_roots = og_roots[all_conditions]
+    #     delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
+    #     perturbed_coefs = my_poly_coef * (1 + delta * Z[:, i])
+    #     perturbed_roots = polynomial_roots(perturbed_coefs)[all_conditions]
+    # og_roots, perturbed_roots = l_x_algo(my_poly_coef, is_pgf, K)
+    
+    # return np.mean(normed_sce)  # Simplified to return the mean as a scalar
 
 
 
 
 # Test kappa_SCE with the polynomial coefficients for 2x^2 - 3x + 1
-test_kappa_sce = kappa_SCE([2, -3, 1], K=5)  # Reduced K for simplicity
-print(test_kappa_sce)
+true_roots, error_roots, test_kappa_sce = l_x_algo([2, -3, 1], is_pgf = False, K = 10, conditions=[is_real, in_bounds])  # Reduced K for simplicity
+print(test_kappa_sce) ### Check this out. 
