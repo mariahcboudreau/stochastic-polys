@@ -15,6 +15,12 @@ class PGF:
     def derivative(self):
         deriv_coefs = self.coef[1:] * np.arange(1, len(self.coef))
         return PGF(deriv_coefs)
+    
+    def normalize(self):
+        """
+        Normalizes coefficients
+        """
+        self.coef/np.sum(self.coef)
 
 def double_factorial(n):
     return factorial2(n-1)
@@ -42,7 +48,7 @@ def polynomial_roots(poly_coef):
     return np.linalg.eigvals(C)
 
 def in_bounds(coefs):
-    return np.logical_and(0 < np.real(coefs), np.real(coefs) <= 1)
+    return np.logical_and(0 < np.real(coefs), np.real(coefs) <= (1+np.finfo(float).eps))
 
 def is_real(coefs):
     return np.isclose(np.imag(coefs), 0)
@@ -71,12 +77,13 @@ def kappa_SCE(my_poly_coef, K=10, conditions=None, delta=0.001):
     normed_sce = np.linalg.norm(SCE_list, axis=0)
     return np.mean(normed_sce)  # Simplified to return the mean as a scalar
 
-def make_G_u_minus_u(G):
-    G_prime = G.derivative()
-    G_1 = PGF(G_prime.coef / G_prime(1.0))
-    G_1_minus_u_coef = np.copy(G_1.coef)
-    G_1_minus_u_coef[1] -= 1
-    return G_1_minus_u_coef
+def make_G_u_minus_u(coefs):
+    # G_prime = G.derivative()
+    G = PGF(coefs)
+    G.normalize()
+    G_minus_u_coef = np.copy(G.coef)
+    G_minus_u_coef[1] -= 1
+    return G_minus_u_coef
 
 
 

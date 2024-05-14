@@ -18,9 +18,9 @@ for i in range(len(alpha_vals)):
         p = alpha / (R0 + alpha) #Changed this parameter
         dist = nbinom(n=r, p=p)  # Scipy parameterizes differently, check this
         my_pdf = dist.pmf(range(N_max + 1))
-        G = PGF(my_pdf)  # Generating function for the degree distribution
-        # Assuming giant_component_size and make_G_u_minus_u are properly implemented
-        G_u_minus_u = make_G_u_minus_u(G)
-        results[i, j] = kappa_SCE(G_u_minus_u, K=100, conditions=[is_real, in_bounds])
+        # G = PGF(my_pdf)  # Generating function for the degree distribution
+        # # Assuming giant_component_size and make_G_u_minus_u are properly implemented
+        # G_u_minus_u = make_G_u_minus_u(G)
+        results[i, j] = kappa_SCE(my_pdf, K=100, conditions=[is_real, in_bounds], is_pgf = True)
 
 print(results)
