@@ -25,7 +25,7 @@ def omega(n):
     return a1 * a2
 
 def generate_sphere_point(dim):
-    vec = np.random.randn(dim)
+    vec = np.random.randn(dim) # Normalized random values from standard normal (mean = 0, stdev = 1)
     return vec / norm(vec)
 
 def companion_matrix(coefs):

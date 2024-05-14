@@ -1,0 +1,8 @@
+Metadata-Version: 2.1
+Name: stochastic_pgfs
+Version: 0.0
+Author: Mariah Boudreau and Will Thompson
+Author-email: mariah.boudreau@uvm.edu
+Requires-Dist: matplotlib==3.8.4
+Requires-Dist: numpy==1.26.4
+Requires-Dist: scipy==1.13.0

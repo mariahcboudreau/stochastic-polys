@@ -5,7 +5,13 @@ from scipy.special import factorial2
 import matplotlib.pyplot as plt
 import random
 
-from .pgfs import *
+from stochastic_pgfs.pgfs import *
+
+####
+#
+#   Class defining PGFs, sets up coefficients and determines derivatives
+#
+####
 
 class PGF:
     def __init__(self, coef):
@@ -18,9 +24,12 @@ class PGF:
         deriv_coefs = self.coef[1:] * np.arange(1, len(self.coef))
         return PGF(deriv_coefs)
 
+
+
 def double_factorial(n):
     return factorial2(n-1)
 
+# Approximation for the Wallis factor
 def omega(n):
     a1 = np.sqrt(2 / (np.pi * (n - 0.5)))
     a2 = np.sqrt((184*n**4) + 23*n + 23*n**2 + 184*n**4)
@@ -49,18 +58,20 @@ def in_bounds(coefs):
 def is_real(coefs):
     return np.isclose(np.imag(coefs), 0)
 
+
+
 def kappa_SCE(my_poly_coef, K=10, conditions=None, delta=0.001):
     if conditions is None:
         conditions = []
     SCE_list = []
     N = len(my_poly_coef)
-    vec_list = [generate_sphere_point(N) for _ in range(K)]
+    vec_list = [generate_sphere_point(N) for _ in range(K)] # Random error
     Z = np.column_stack(vec_list)
     
     for i in range(K):
         og_roots = polynomial_roots(my_poly_coef)
         all_conditions = np.array([True] * len(og_roots))
-        if conditions:
+        if conditions: #Double checks they are roots
             all_conditions = np.logical_and.reduce([cond(og_roots) for cond in conditions])
         
         og_roots = og_roots[all_conditions]
