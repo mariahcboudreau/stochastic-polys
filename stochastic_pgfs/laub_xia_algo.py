@@ -13,16 +13,16 @@ from stochastic_pgfs.pgfs import *
 #
 ####
 
-class PGF:
-    def __init__(self, coef):
-        self.coef = np.array(coef, dtype=float)
+# class PGF:
+#     def __init__(self, coef):
+#         self.coef = np.array(coef, dtype=float)
     
-    def __call__(self, x):
-        return sum(self.coef[i] * x**i for i in range(len(self.coef)))
+#     def __call__(self, x):
+#         return sum(self.coef[i] * x**i for i in range(len(self.coef)))
     
-    def derivative(self):
-        deriv_coefs = self.coef[1:] * np.arange(1, len(self.coef))
-        return PGF(deriv_coefs)
+#     def derivative(self):
+#         deriv_coefs = self.coef[1:] * np.arange(1, len(self.coef))
+#         return PGF(deriv_coefs)
 
 
 
@@ -101,12 +101,14 @@ def l_x_algo(my_poly_coef, is_pgf, K = 10, conditions = None, delta = 0.001):
     
     
 
-        # Both conditions perform this step after preprocessing
+        # Both conditions perform this step after preprocessing 
+        # ONLY LOOK AT THIS FOR DEBUGGING 
         all_perturbed_roots[i] = np.min(np.real(perturbed_roots))
 
         all_og_roots[i] = np.min(np.real(og_roots))
 
     normed_sce = np.linalg.norm(SCE_list, axis=0)
+    #Apply omega
     return np.mean(normed_sce)
 
 # def kappa_SCE(my_poly_coef, is_pgf, K=10, conditions=None, delta=0.001 ):

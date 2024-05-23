@@ -5,22 +5,22 @@ from scipy.special import factorial2
 import matplotlib.pyplot as plt
 import random
 
-class PGF:
-    def __init__(self, coef):
-        self.coef = np.array(coef, dtype=float)
+# class PGF:
+#     def __init__(self, coef):
+#         self.coef = np.array(coef, dtype=float)
     
-    def __call__(self, x):
-        return sum(self.coef[i] * x**i for i in range(len(self.coef)))
+#     def __call__(self, x):
+#         return sum(self.coef[i] * x**i for i in range(len(self.coef)))
     
-    def derivative(self):
-        deriv_coefs = self.coef[1:] * np.arange(1, len(self.coef))
-        return PGF(deriv_coefs)
+#     def derivative(self):
+#         deriv_coefs = self.coef[1:] * np.arange(1, len(self.coef))
+#         return PGF(deriv_coefs)
     
-    def normalize(self):
-        """
-        Normalizes coefficients
-        """
-        self.coef/np.sum(self.coef)
+#     def normalize(self):
+#         """
+#         Normalizes coefficients
+#         """
+#         self.coef/np.sum(self.coef)
 
 def double_factorial(n):
     return factorial2(n-1)
@@ -77,13 +77,13 @@ def kappa_SCE(my_poly_coef, K=10, conditions=None, delta=0.001):
     normed_sce = np.linalg.norm(SCE_list, axis=0)
     return np.mean(normed_sce)  # Simplified to return the mean as a scalar
 
-def make_G_u_minus_u(coefs):
-    # G_prime = G.derivative()
-    G = PGF(coefs)
-    G.normalize()
-    G_minus_u_coef = np.copy(G.coef)
-    G_minus_u_coef[1] -= 1
-    return G_minus_u_coef
+# def make_G_u_minus_u(coefs):
+#     # G_prime = G.derivative()
+#     G = PGF(coefs)
+#     G.normalize()
+#     G_minus_u_coef = np.copy(G.coef)
+#     G_minus_u_coef[1] -= 1
+#     return G_minus_u_coef
 
 
 
