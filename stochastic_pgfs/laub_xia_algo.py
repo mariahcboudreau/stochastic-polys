@@ -109,7 +109,7 @@ def l_x_algo(my_poly_coef, is_pgf, K = 10, conditions = None, delta = 0.001):
 
     normed_sce = np.linalg.norm(SCE_list, axis=0)
     #Apply omega
-    return np.mean(normed_sce)
+    return omega(K)/omega(N)*np.mean(normed_sce)
 
 # def kappa_SCE(my_poly_coef, is_pgf, K=10, conditions=None, delta=0.001 ):
     # if conditions is None:
