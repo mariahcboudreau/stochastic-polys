@@ -108,7 +108,6 @@ def l_x_algo(my_poly_coef, is_pgf, K = 10, conditions = None, delta = 0.001):
         all_og_roots[i] = np.min(np.real(og_roots))
 
     normed_sce = np.linalg.norm(SCE_list, axis=0)
-    #Apply omega
     return omega(K)/omega(N)*np.mean(normed_sce)
 
 # def kappa_SCE(my_poly_coef, is_pgf, K=10, conditions=None, delta=0.001 ):
