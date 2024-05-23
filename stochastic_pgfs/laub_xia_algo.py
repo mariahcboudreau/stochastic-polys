@@ -74,8 +74,8 @@ def l_x_algo(my_poly_coef, is_pgf, K = 10, conditions = None, delta = 0.001):
     # Root solving and error
     for i in range(K):
         if is_pgf:
-            my_poly_coef = make_G_u_minus_u(my_poly_coef)
-            og_roots = polynomial_roots(my_poly_coef)
+            my_pgf_coef = make_G_u_minus_u(my_poly_coef)
+            og_roots = polynomial_roots(my_pgf_coef)
 
             all_conditions = np.array([True] * len(og_roots))
             if conditions: #Double checks they are roots
@@ -102,12 +102,12 @@ def l_x_algo(my_poly_coef, is_pgf, K = 10, conditions = None, delta = 0.001):
     
 
         # Both conditions perform this step after preprocessing
-        all_perturbed_roots[i-1] = np.min(perturbed_roots)
+        all_perturbed_roots[i] = np.min(np.real(perturbed_roots))
 
-        all_og_roots[i-1] = np.min(og_roots)
+        all_og_roots[i] = np.min(np.real(og_roots))
 
     normed_sce = np.linalg.norm(SCE_list, axis=0)
-    return all_og_roots, all_perturbed_roots, np.mean(normed_sce)
+    return np.mean(normed_sce)
 
 # def kappa_SCE(my_poly_coef, is_pgf, K=10, conditions=None, delta=0.001 ):
     # if conditions is None:
@@ -134,6 +134,6 @@ def l_x_algo(my_poly_coef, is_pgf, K = 10, conditions = None, delta = 0.001):
 
 
 
-# Test kappa_SCE with the polynomial coefficients for 2x^2 - 3x + 1
-true_roots, error_roots, test_kappa_sce = l_x_algo([2, -3, 1], is_pgf = False, K = 10, conditions=[is_real, in_bounds])  # Reduced K for simplicity
+# # Test kappa_SCE with the polynomial coefficients for 2x^2 - 3x + 1
+test_kappa_sce = l_x_algo([2, -3, 1], is_pgf = False, K = 10, conditions=[is_real, in_bounds])  # Reduced K for simplicity
 print(test_kappa_sce) ### Check this out. 
