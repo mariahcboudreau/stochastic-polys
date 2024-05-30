@@ -81,8 +81,8 @@ def l_x_algo(my_poly_coef, is_pgf, K = 10, conditions = None, delta = 0.001):
             if conditions: #Double checks they are roots
                 all_conditions = np.logical_and.reduce([cond(og_roots) for cond in conditions])
             og_roots = og_roots[all_conditions]
-            delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
-
+            #delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
+            delta = 1
             perturbed_coefs = my_poly_coef * (1 + delta * Z[:, i])
             perturbed_coefs = make_G_u_minus_u(perturbed_coefs)
             
@@ -93,7 +93,8 @@ def l_x_algo(my_poly_coef, is_pgf, K = 10, conditions = None, delta = 0.001):
             if conditions: #Double checks they are roots
                 all_conditions = np.logical_and.reduce([cond(og_roots) for cond in conditions])
             og_roots = og_roots[all_conditions]
-            delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
+            # delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
+            delta = 1
             perturbed_coefs = my_poly_coef * (1 + delta * Z[:, i])
 
         perturbed_roots = polynomial_roots(perturbed_coefs)[all_conditions][0]
@@ -135,6 +136,3 @@ def l_x_algo(my_poly_coef, is_pgf, K = 10, conditions = None, delta = 0.001):
 
 
 
-# # Test kappa_SCE with the polynomial coefficients for 2x^2 - 3x + 1
-test_kappa_sce = l_x_algo([2, -3, 1], is_pgf = False, K = 10, conditions=[is_real, in_bounds])  # Reduced K for simplicity
-print(test_kappa_sce) ### Check this out. 
