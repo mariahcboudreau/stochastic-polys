@@ -97,9 +97,46 @@ def variance_sim(my_poly_coef, trials, conditions):
         if conditions: #Double checks they are roots
             all_conditions = np.logical_and.reduce([cond(og_roots) for cond in conditions])
         og_roots = og_roots[all_conditions]
-        # delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
-        delta = 1
+        delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
+        #delta = 1
+
+        ### Change to multiplicative noise
         perturbed_coefs = my_poly_coef * (1 + delta * Z[:, i])
+        perturbed_coefs = make_G_u_minus_u(perturbed_coefs)
+        perturbed_roots = polynomial_roots(perturbed_coefs)[all_conditions]
+
+        sim_og_roots[i] = np.real(og_roots[0])
+        sim_pert_roots[i] = np.real(perturbed_roots)[0]
+    
+    var_of_all = np.var(sim_pert_roots, axis = 0)
+    #violins(perturbed_coefs)
+    #ridgePlots(U)    
+    return var_of_all
+
+
+
+def variance_sim_multiplicative(my_poly_coef, trials, conditions):
+    
+    sim_og_roots = np.zeros(trials)
+    sim_pert_roots = np.zeros(trials)
+    N = len(my_poly_coef)
+    vec_list = [generate_sphere_point(N) for _ in range(trials)] # Random error
+    Z = np.column_stack(vec_list)
+    
+    for i in range(trials):
+        
+        my_pgf_coef = make_G_u_minus_u(my_poly_coef)
+        og_roots = polynomial_roots(my_pgf_coef)
+
+        all_conditions = np.array([True] * len(og_roots))
+        if conditions: #Double checks they are roots
+            all_conditions = np.logical_and.reduce([cond(og_roots) for cond in conditions])
+        og_roots = og_roots[all_conditions]
+        delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
+        #delta = 1
+
+        ### Change to multiplicative noise
+        perturbed_coefs = my_poly_coef * (delta * Z[:, i])
         perturbed_coefs = make_G_u_minus_u(perturbed_coefs)
         perturbed_roots = polynomial_roots(perturbed_coefs)[all_conditions]
 

@@ -42,5 +42,5 @@ print("stop")
 
 df_variances = pd.DataFrame(variances) 
 sns.heatmap(df_variances, yticklabels= alpha_vals, xticklabels= R0_vals, cmap = "Greens")
-plt.savefig("Users/mcboudre/Documents/LSD_Lab/stochastic_polys/stochastic_pgfs/plots/variance_heatmap"+ date +"_1000trials.pdf", format = "pdf")
+#plt.savefig("Users/mcboudre/Documents/LSD_Lab/stochastic_polys/stochastic_pgfs/plots/variance_heatmap"+ date +"_1000trials.pdf", format = "pdf")
 print(variances)
