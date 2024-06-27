@@ -28,8 +28,8 @@ for i in range(len(alpha_vals)):
         # G_u_minus_u = make_G_u_minus_u(G)
         condition_nums[i,j] = l_x_algo(my_pdf, K=1000, conditions=[is_real, in_bounds], is_pgf = True)
 
-# df_variances = pd.DataFrame(condition_nums) 
-# sns.heatmap(df_variances, yticklabels= alpha_vals, xticklabels= R0_vals, cmap = "Blues")
+df_variances = pd.DataFrame(condition_nums) 
+sns.heatmap(df_variances, yticklabels= alpha_vals, xticklabels= R0_vals, cmap = "Blues")
 # plt.savefig("Users/mcboudre/Documents/LSD_Lab/stochastic_polys/stochastic_pgfs/plots/condition_number_heatmap"+ date +"_1000trials.pdf", format = "pdf")
 
 ### Heat Map

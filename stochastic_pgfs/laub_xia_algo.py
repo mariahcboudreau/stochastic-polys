@@ -44,7 +44,10 @@ def companion_matrix(coefs):
     n = len(coefs)
     A = np.zeros((n-1, n-1))
     A[1:, :-1] = np.eye(n-2)
-    A[0, :] = -coefs[1:n] / coefs[0]
+    if coefs[0] != 0: 
+        A[0, :] = -coefs[1:n] / coefs[0]
+    else:
+        A[0, :] = -coefs[1:n]
     return A
 
 # Retest polynomial_roots with corrected companion matrix function
@@ -53,11 +56,18 @@ def polynomial_roots(poly_coef):
     return np.linalg.eigvals(C)
 
 def in_bounds(coefs):
-    return np.logical_and(0 < np.real(coefs), np.real(coefs) <= 1)
+    return np.logical_and(0 <= np.real(coefs), np.real(coefs) < 0.999999999999)
 
 def is_real(coefs):
     return np.isclose(np.imag(coefs), 0)
 
+def l_x_metric(og_roots, perturbed_roots, delta, K, N):
+    SCE_list = []
+    SCE_list.append(np.abs(og_roots - perturbed_roots) / delta * np.abs(og_roots))
+    normed_sce = np.linalg.norm(SCE_list, axis=0)
+    
+    return omega(K)/omega(N)*np.mean(normed_sce)
+    
 
 def l_x_algo(my_poly_coef, is_pgf, K = 10, conditions = None, delta = 0.001):
     if conditions is None:
@@ -93,8 +103,8 @@ def l_x_algo(my_poly_coef, is_pgf, K = 10, conditions = None, delta = 0.001):
             if conditions: #Double checks they are roots
                 all_conditions = np.logical_and.reduce([cond(og_roots) for cond in conditions])
             og_roots = og_roots[all_conditions]
-            # delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
-            delta = 1
+            delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
+            #delta = 1
             perturbed_coefs = my_poly_coef * (1 + delta * Z[:, i])
 
         perturbed_roots = polynomial_roots(perturbed_coefs)[all_conditions][0]
@@ -110,6 +120,63 @@ def l_x_algo(my_poly_coef, is_pgf, K = 10, conditions = None, delta = 0.001):
 
     normed_sce = np.linalg.norm(SCE_list, axis=0)
     return omega(K)/omega(N)*np.mean(normed_sce)
+
+def l_x_algo_multiplicative(my_poly_coef, is_pgf, K = 10, conditions = None, delta = 0.001):
+    if conditions is None:
+        conditions = []
+    all_og_roots = np.empty(K)
+    all_perturbed_roots = np.empty(K)
+    N = len(my_poly_coef)
+    vec_list = [generate_sphere_point(N) for _ in range(K)] # Random error
+    Z = np.column_stack(vec_list)
+
+    SCE_list = []
+    
+    
+    # Root solving and error
+    for i in range(K):
+        if is_pgf:
+            my_pgf_coef = make_G_u_minus_u(my_poly_coef)
+            og_roots = polynomial_roots(my_pgf_coef)
+
+            all_conditions = np.array([True] * len(og_roots))
+            if conditions: #Double checks they are roots
+                all_conditions = np.logical_and.reduce([cond(og_roots) for cond in conditions])
+            og_roots = og_roots[all_conditions]
+            #delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
+            delta = 1
+            perturbed_coefs = my_poly_coef * (delta * Z[:, i])
+            perturbed_coefs = make_G_u_minus_u(perturbed_coefs)
+            
+
+        else:
+            og_roots = polynomial_roots(my_poly_coef)
+            all_conditions = np.array([True] * len(og_roots))
+            if conditions: #Double checks they are roots
+                all_conditions = np.logical_and.reduce([cond(og_roots) for cond in conditions])
+            og_roots = og_roots[all_conditions]
+            delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
+            #delta = 1
+            perturbed_coefs = my_poly_coef * (delta * Z[:, i])
+
+        perturbed_roots = polynomial_roots(perturbed_coefs)[all_conditions][0]
+        SCE_list.append(np.abs(og_roots - perturbed_roots) / delta * np.abs(og_roots))
+    
+    
+
+        # Both conditions perform this step after preprocessing 
+        # ONLY LOOK AT THIS FOR DEBUGGING 
+        all_perturbed_roots[i] = np.min(np.real(perturbed_roots))
+
+        all_og_roots[i] = np.min(np.real(og_roots))
+
+    normed_sce = np.linalg.norm(SCE_list, axis=0)
+    return omega(K)/omega(N)*np.mean(normed_sce)
+
+
+
+
+
 
 # def kappa_SCE(my_poly_coef, is_pgf, K=10, conditions=None, delta=0.001 ):
     # if conditions is None:
