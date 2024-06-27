@@ -318,16 +318,7 @@ def runFSE(excessDegree, numTrials, exp, maxk):
                 true_prime_infinite_G1 = true_prime_infinite_G1/sum(true_prime_infinite_G1)
            
             true_root, true_outbreak[count]= pgfOutbreak(true_prime_infinite_G1)
-            
-          
-            
            
-           
-       
-            
-                   
-            
-        
     
             converts = np.zeros((numTrials))
             
@@ -444,7 +435,6 @@ def plotting_S_and_k():
         primes = np.zeros((len(avgK), numTrials))
         norms = np.zeros((len(avgK), numTrials))
         truRoot = np.zeros((len(avgK), numTrials))
-        polyLengths = np.zeros((len(avgK)*numTrials + len(avgK)))
         
         count = 0
         leng = 0

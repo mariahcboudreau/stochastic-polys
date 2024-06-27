@@ -389,8 +389,6 @@ def main(r0, k, col, numSD, inc, maxk):
     
     for j in range(numSD):
         
-        
-        
         for n in range(col):
             
             for i in range(maxk):
