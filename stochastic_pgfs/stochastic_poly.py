@@ -39,7 +39,8 @@ def companion_matrix(coefs):
     n = len(coefs)
     A = np.zeros((n-1, n-1))
     A[1:, :-1] = np.eye(n-2)
-    A[0, :] = -coefs[1:n] / coefs[0]
+    if coefs[0] != 0: 
+        A[0, :] = -coefs[1:n] / coefs[0]
     return A
 
 # Retest polynomial_roots with corrected companion matrix function
