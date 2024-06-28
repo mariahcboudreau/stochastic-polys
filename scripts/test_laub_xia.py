@@ -26,6 +26,8 @@ for i in range(len(alpha_vals)):
         # G = PGF(my_pdf)  # Generating function for the degree distribution
         # # Assuming giant_component_size and make_G_u_minus_u are properly implemented
         # G_u_minus_u = make_G_u_minus_u(G)
+        if i == 30:
+            print('stop')
         condition_nums[i,j] = l_x_algo(my_pdf, K=1000, conditions=[is_real, in_bounds], is_pgf = True)
 
 df_variances = pd.DataFrame(condition_nums) 
