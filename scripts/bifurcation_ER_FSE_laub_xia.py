@@ -157,8 +157,9 @@ def plotting_S_and_k():
         if sum(true_prime_infinite_G1) != 0:
             true_prime_infinite_G1 = true_prime_infinite_G1/sum(true_prime_infinite_G1)
 
+        true_prime_infinite_G1 = np.array(true_prime_infinite_G1)
 
-        condition_nums[count], true_Root[count]  = l_x_algo_multiplicative(true_prime_infinite_G1, K=1000, conditions=[is_real, in_bounds], is_pgf = True)
+        condition_nums[count], true_Root[count]  = l_x_algo_multiplicative(true_prime_infinite_G1.reverse(), K=1000, conditions=[is_real, in_bounds], is_pgf = True)
 
         true_outbreak[count] = 1-true_Root[count]
 

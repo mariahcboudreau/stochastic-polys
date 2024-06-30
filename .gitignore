@@ -40,3 +40,5 @@ Thumbs.db
 # Files #
 ######################
 Stochastic_pgfs.egg-info/
+*.pyc
+.DS_Store

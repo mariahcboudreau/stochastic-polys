@@ -91,8 +91,12 @@ def l_x_algo(my_poly_coef, is_pgf, K = 10, conditions = None, delta = 0.001):
             if conditions: #Double checks they are roots
                 all_conditions = np.logical_and.reduce([cond(og_roots) for cond in conditions])
             og_roots = og_roots[all_conditions]
-            #delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
-            delta = 1
+            if delta == 0.001:
+                delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
+            # else:
+            #     delta = np.sqrt(norm(og_roots) * delta)
+            #delta = 1
+            
             perturbed_coefs = my_poly_coef * (1 + delta * Z[:, i])
             perturbed_coefs = make_G_u_minus_u(perturbed_coefs)
             
@@ -103,20 +107,28 @@ def l_x_algo(my_poly_coef, is_pgf, K = 10, conditions = None, delta = 0.001):
             if conditions: #Double checks they are roots
                 all_conditions = np.logical_and.reduce([cond(og_roots) for cond in conditions])
             og_roots = og_roots[all_conditions]
-            delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
+            # if delta == 0.001:
+            #     delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
+            # else:
+            #     delta = np.sqrt(norm(og_roots) * delta)
             #delta = 1
             perturbed_coefs = my_poly_coef * (1 + delta * Z[:, i])
 
-        perturbed_roots = polynomial_roots(perturbed_coefs)[all_conditions][0]
+
+        perturbed_roots = polynomial_roots(perturbed_coefs)
+        all_conditions = np.logical_and.reduce([cond(perturbed_roots) for cond in [is_real]])
+        perturbed_roots = perturbed_roots[all_conditions]
+        if len(perturbed_roots) > 1:
+            perturbed_roots = np.min(np.abs(og_roots - perturbed_roots))
         SCE_list.append(np.abs(og_roots - perturbed_roots) / delta * np.abs(og_roots))
     
     
 
         # Both conditions perform this step after preprocessing 
         # ONLY LOOK AT THIS FOR DEBUGGING 
-        all_perturbed_roots[i] = np.min(np.real(perturbed_roots))
+        # all_perturbed_roots[i] = np.min(np.real(perturbed_roots))
 
-        all_og_roots[i] = np.min(np.real(og_roots))
+        # all_og_roots[i] = np.min(np.real(og_roots))
 
     normed_sce = np.linalg.norm(SCE_list, axis=0)
     return omega(K)/omega(N)*np.mean(normed_sce)
@@ -142,9 +154,12 @@ def l_x_algo_multiplicative(my_poly_coef, is_pgf, K = 10, conditions = None, del
             all_conditions = np.array([True] * len(og_roots))
             if conditions: #Double checks they are roots
                 all_conditions = np.logical_and.reduce([cond(og_roots) for cond in conditions])
+            
+            if delta == 0.001:
+                delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
+            else:
+                delta = np.sqrt(norm(og_roots) * delta)
             og_roots = og_roots[all_conditions]
-            #delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
-            delta = 1
             perturbed_coefs = my_poly_coef * (delta * Z[:, i])
             perturbed_coefs = make_G_u_minus_u(perturbed_coefs)
             
@@ -159,19 +174,22 @@ def l_x_algo_multiplicative(my_poly_coef, is_pgf, K = 10, conditions = None, del
             #delta = 1
             perturbed_coefs = my_poly_coef * (delta * Z[:, i])
 
-        perturbed_roots = polynomial_roots(perturbed_coefs)[all_conditions][0]
+        perturbed_roots = polynomial_roots(perturbed_coefs)
+        all_conditions = np.logical_and.reduce([cond(perturbed_roots) for cond in conditions])
+        perturbed_roots = perturbed_roots[all_conditions]
         SCE_list.append(np.abs(og_roots - perturbed_roots) / delta * np.abs(og_roots))
     
     
 
         # Both conditions perform this step after preprocessing 
         # ONLY LOOK AT THIS FOR DEBUGGING 
-        all_perturbed_roots[i] = np.min(np.real(perturbed_roots))
+        # all_perturbed_roots[i] = np.min(np.real(perturbed_roots))
 
-        all_og_roots[i] = np.min(np.real(og_roots))
+        # all_og_roots[i] = np.min(np.real(og_roots))
 
     normed_sce = np.linalg.norm(SCE_list, axis=0)
     return omega(K)/omega(N)*np.mean(normed_sce)
+
 
 
 

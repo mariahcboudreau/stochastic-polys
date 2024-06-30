@@ -14,7 +14,8 @@ date = datetime.today().strftime('%m-%d-%Y')
 alpha_vals = np.arange(0.1,0.3,0.01)  # Example values
 R0_vals = np.arange(1,5, 0.1)  # Example values
 N_max = 10  # Maximum value for N in the distribution
-condition_nums = np.zeros((len(alpha_vals), len(R0_vals)))
+condition_nums_multiplicative = np.zeros((len(alpha_vals), len(R0_vals)))
+condition_nums_additive = np.zeros((len(alpha_vals), len(R0_vals)))
 variances = np.zeros((len(alpha_vals), len(R0_vals)))
 
 for i in range(len(alpha_vals)):
@@ -28,11 +29,13 @@ for i in range(len(alpha_vals)):
         # G = PGF(my_pdf)  # Generating function for the degree distribution
         # # Assuming giant_component_size and make_G_u_minus_u are properly implemented
         # G_u_minus_u = make_G_u_minus_u(G)
-        condition_nums[i,j] = l_x_algo_multiplicative(my_pdf, K=1000, conditions=[is_real, in_bounds], is_pgf = True)
-        variances[i,j] = variance_sim_multiplicative(my_pdf, trials = 1000, conditions=[is_real, in_bounds])
+        condition_nums_additive[i,j] = l_x_algo(my_pdf, K=1000, conditions=[is_real, in_bounds], is_pgf = True)
+        #condition_nums_multiplicative[i,j] = l_x_algo_multiplicative(my_pdf, K=1000, conditions=[is_real, in_bounds], is_pgf = True)
+        variances[i,j] = variance_sim(my_pdf, trials = 1000, conditions=[is_real, in_bounds])
 
 
 print('Stop')
+condition_nums = condition_nums_additive/np.sum(condition_nums_additive)
 df_cond_nums = pd.DataFrame(condition_nums) 
 df_cond_nums.rename(columns=lambda s:R0_vals[s], index=lambda s: alpha_vals[s], inplace = True)
 

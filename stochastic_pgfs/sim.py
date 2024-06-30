@@ -80,7 +80,7 @@ def neg_binom(r0, k, maxk):
 
     return g1True
 
-def variance_sim(my_poly_coef, trials, conditions):
+def variance_sim(my_poly_coef, trials, conditions, delta = 0.001):
     
     sim_og_roots = np.zeros(trials)
     sim_pert_roots = np.zeros(trials)
@@ -97,7 +97,8 @@ def variance_sim(my_poly_coef, trials, conditions):
         if conditions: #Double checks they are roots
             all_conditions = np.logical_and.reduce([cond(og_roots) for cond in conditions])
         og_roots = og_roots[all_conditions]
-        delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
+        if delta == 0.001:
+            delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
         #delta = 1
 
         ### Change to multiplicative noise
@@ -132,7 +133,9 @@ def variance_sim_multiplicative(my_poly_coef, trials, conditions):
         if conditions: #Double checks they are roots
             all_conditions = np.logical_and.reduce([cond(og_roots) for cond in conditions])
         og_roots = og_roots[all_conditions]
-        delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
+        if delta == 0.001:
+            delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)
+        
         #delta = 1
 
         ### Change to multiplicative noise
