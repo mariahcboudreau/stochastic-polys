@@ -1,4 +1,6 @@
-import numpy as np 
+import numpy as np
+
+
 ##class defines probability generating fucntion
 class PGF:
     def __init__(self, coef):
@@ -6,25 +8,26 @@ class PGF:
         coef: list of coefficients of the PGF, starting with the constant term
         """
         self.coef = np.array(coef, dtype=float)
-    
+
     def __call__(self, x):
         """
         x: point at which to evaluate the PGF
         """
         return sum(self.coef[i] * x**i for i in range(len(self.coef)))
-    
+
     def derivative(self):
         """
         Returns the derivative of the PGF
         """
         deriv_coefs = self.coef[1:] * np.arange(1, len(self.coef))
         return PGF(deriv_coefs)
-    
+
     def normalize(self):
         """
         Normalizes coefficients
         """
-        self.coef/np.sum(self.coef)
+        self.coef / np.sum(self.coef)
+
 
 # #generate PGF corresponding to self consistent equation G(u) = u
 # def make_G_u_minus_u(G):
@@ -35,7 +38,7 @@ class PGF:
 #     return G_1_minus_u_coef
 
 
-#generate PGF corresponding to self consistent equation G(u) = u without taking derivative inherantly 
+# generate PGF corresponding to self consistent equation G(u) = u without taking derivative inherantly
 def make_G_u_minus_u(coefs):
     G = PGF(coefs)
     G.normalize()
