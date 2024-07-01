@@ -118,8 +118,6 @@ def variance_sim(my_poly_coef, trials, conditions):
         sim_pert_roots[i] = np.real(perturbed_roots)[0]
 
     var_of_all = np.var(sim_pert_roots, axis=0)
-    # violins(perturbed_coefs)
-    # ridgePlots(U)
     return var_of_all
 
 
@@ -156,4 +154,92 @@ def variance_sim_multiplicative(my_poly_coef, trials, conditions):
     var_of_all = np.var(sim_pert_roots, axis=0)
     # violins(perturbed_coefs)
     # ridgePlots(U)
+    return var_of_all
+
+
+def variance_sim(
+    my_poly_coef,
+    is_pgf=True,
+    K=10,
+    conditions=None,
+    delta=0.001,
+    perturbation_type="additive",
+):
+    if conditions is None:
+        conditions = []
+    sim_og_roots = np.zeros(K)
+    sim_pert_roots = np.zeros(K)
+    N = len(my_poly_coef)
+    vec_list = [generate_sphere_point(N) for _ in range(K)]  # Random error
+    Z = np.column_stack(vec_list)
+
+
+    # Root solving and error
+    for i in range(K):
+        if is_pgf:
+            my_pgf_coef = make_G_u_minus_u(my_poly_coef)
+            all_og_roots = polynomial_roots(my_pgf_coef)
+
+            all_conditions = np.array([True] * len(all_og_roots))
+            if conditions:  # Double checks they are roots
+                all_conditions = np.logical_and.reduce(
+                    [cond(all_og_roots) for cond in conditions]
+                )
+            og_roots = all_og_roots[all_conditions]
+            delta = 10 * np.sqrt(norm(all_og_roots) * np.finfo(float).eps)
+            # delta = np.sqrt(norm(all_og_roots) * 2**(-10))
+            # delta = 10**(-8)
+            #delta = 1
+            if perturbation_type == "additive":
+                #breakpoint()
+                perturbed_coefs = my_poly_coef * (1 + delta * Z[:, i])
+            elif perturbation_type == "multiplicative":
+                #breakpoint()
+                perturbed_coefs = my_poly_coef * (1 * delta * Z[:, i])
+            else:
+                assert "The perturbation type is not valid. Please choose 'additive' or 'multiplicative'"
+            perturbed_coefs = make_G_u_minus_u(perturbed_coefs)
+
+        else:
+            all_og_roots = polynomial_roots(my_poly_coef)
+            all_conditions = np.array([True] * len(og_roots))
+            if conditions:  # Double checks they are roots
+                all_conditions = np.logical_and.reduce(
+                    [cond(og_roots) for cond in conditions]
+                )
+            og_roots = all_og_roots[all_conditions]
+            # delta = np.sqrt(norm(all_og_roots) * np.finfo(float).eps)
+            
+            # delta = 1
+            if perturbation_type == "additive":
+                breakpoint()
+                perturbed_coefs = my_poly_coef * (1 + delta * Z[:, i])
+            elif perturbation_type == "multiplicative":
+                breakpoint()
+                perturbed_coefs = my_poly_coef * (1 * delta * Z[:, i])
+            else:
+                assert "The perturbation type is not valid. Please choose 'additive' or 'multiplicative'"
+
+        all_perturbed_roots = polynomial_roots(perturbed_coefs)
+        all_conditions = np.array([True] * len(all_perturbed_roots))
+        if conditions:  # Double checks they are roots
+            all_conditions = np.logical_and.reduce(
+                    [cond(all_perturbed_roots) for cond in conditions]
+            )
+        if len(all_perturbed_roots[all_conditions]) > 1:
+            perturbed_roots = np.min(all_perturbed_roots[all_conditions])
+        elif len(all_perturbed_roots[all_conditions]) == 0:
+            real_perturbed = all_perturbed_roots[np.isreal(all_perturbed_roots)]
+            if real_perturbed[1] < 0:
+                perturbed_roots = real_perturbed[1]
+        else:
+            perturbed_roots = all_perturbed_roots[all_conditions][0]
+
+        # Both conditions perform this step after preprocessing
+        # ONLY LOOK AT THIS FOR DEBUGGING
+        sim_pert_roots[i] = np.min(np.real(perturbed_roots))
+
+        sim_og_roots[i] = np.min(np.real(og_roots))
+
+    var_of_all = np.var(sim_pert_roots, axis=0)
     return var_of_all
