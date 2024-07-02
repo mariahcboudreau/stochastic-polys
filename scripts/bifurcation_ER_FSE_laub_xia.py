@@ -90,6 +90,53 @@ def ER_FSE_Sim(n, prob):
     return p_k_sim, G
 
 
+def selfConsistant(g1):
+    #give dx
+    g1_prime = derivative(g1)
+    
+    # Make a copy of g1 in the right way
+    g1_copy = np.array([x for x in g1])
+    
+    if g1_copy.size > 1:
+        if g1_copy.size > 2: 
+            g1_copy[1] = g1_copy[1] - 1
+        elif g1_copy.size > 1:
+            g1_copy = np.append(g1_copy, -1)
+    else:
+        g1_copy = np.array([0,-1])
+    
+    
+    g1_copy = np.flip(g1_copy)
+
+    
+    if sum(g1_prime) > 1:
+        #print("There is a root below 1")
+        all_roots = np.roots(g1_copy)
+        
+        all_roots = all_roots[np.isreal(all_roots)]
+        all_roots = all_roots.real
+        all_roots = all_roots[all_roots >= 0]
+        all_roots = all_roots[all_roots < .99999999999]
+        if all_roots.size > 1:
+            all_roots = max(all_roots)
+        if all_roots.size == 0:
+            all_roots = 1
+        
+    else:
+        all_roots = 1
+    
+    return all_roots
+    
+    
+
+def pgfOutbreak(g1Outbreak):
+    
+    
+    root = selfConsistant(g1Outbreak)
+    
+    outbreak = 1-root
+    
+    return root, outbreak
 
 def giant_comps(G, n):
 
@@ -126,7 +173,7 @@ def giant_comps(G, n):
 
 ########################## THRESHOLD FIGURE ###########################
 def plotting_S_and_k():
-    avgK = np.linspace(0,3, num=6)
+    avgK = np.linspace(0,3, num=31)
     numTrials = 100
     exp = 3
     maxk = 20
@@ -135,7 +182,9 @@ def plotting_S_and_k():
     giantComps = np.zeros((len(avgK), numTrials))
     pgfSimOutbreak = np.zeros((len(avgK), numTrials))
     true_outbreak = np.zeros(len(avgK))
+    true_outbreak_origin = np.zeros(len(avgK))
     condition_nums = np.zeros(len(avgK))
+    diffs = []
     true_Root = np.zeros(len(avgK))
     pgfSimRoot = np.zeros((len(avgK), numTrials))
     
@@ -153,12 +202,48 @@ def plotting_S_and_k():
         
         # #Derivative
         true_prime_infinite_G1 = derivative(true_p_k_infinite_G0)
+        # true_prime_infinite_G1 = ERCoeff(maxk, prob, n)
 
         if sum(true_prime_infinite_G1) != 0:
             true_prime_infinite_G1 = true_prime_infinite_G1/sum(true_prime_infinite_G1)
 
+        true_root, true_outbreak_origin[count] = pgfOutbreak(true_prime_infinite_G1)
 
-        condition_nums[count], true_Root[count]  = l_x_algo(np.fliplr(true_prime_infinite_G1), K=1000, conditions=[is_real, in_bounds], is_pgf = True, perturbation_type="additive")
+
+        if np.sum(derivative(true_prime_infinite_G1)) > 1:
+            my_pgf_coef = make_G_u_minus_u(true_prime_infinite_G1)
+            all_og_roots = polynomial_roots(np.flip(my_pgf_coef))
+            all_conditions = np.array([True] * len(all_og_roots))
+                
+            all_conditions = np.logical_and.reduce(
+                [cond(all_og_roots) for cond in [is_real, in_bounds]]
+            )
+            if len(all_og_roots[all_conditions]) > 1:
+                true_Root[count] = np.max(all_og_roots[all_conditions])
+            elif len(all_og_roots[all_conditions]) == 0:
+                true_Root[count] = 1
+            else:
+                true_Root[count] = all_og_roots[all_conditions][0]
+        else:
+            true_Root[count] = 1
+            my_pgf_coef = make_G_u_minus_u(true_prime_infinite_G1)
+            all_og_roots = polynomial_roots(np.flip(my_pgf_coef))
+
+        # my_pgf_coef = make_G_u_minus_u(true_prime_infinite_G1)
+        # all_og_roots = polynomial_roots(my_pgf_coef)
+
+        # all_conditions = np.array([True] * len(all_og_roots))
+       
+        # all_conditions = np.logical_and.reduce(
+        #     [cond(all_og_roots) for cond in [is_real, in_bounds]]
+        # )
+        # if len(all_og_roots[all_conditions]) != 0:
+        #     true_Root[count] = np.max(all_og_roots[all_conditions])
+        # else:
+        #     true_Root[count] = 1
+
+
+        diffs.append(l_x_algo(true_prime_infinite_G1, K=1000, conditions=[is_real, in_bounds], is_pgf = True, perturbation_type="additive", bifurcation=True))
 
         true_outbreak[count] = 1-true_Root[count]
 
@@ -197,7 +282,7 @@ def plotting_S_and_k():
         
     # fig2 = plt.figure(figsize=(10,7))
 ########################### PLOTTING ###############################
-
+    from matplotlib.lines import Line2D
 
     plt.axis([0,3,0,1])
     plt.title("Population N = %d, Outbreak Threshold" %(n))
@@ -205,14 +290,19 @@ def plotting_S_and_k():
     plt.ylabel("S")
 
     #print(winklerMeasure)
+    plt.scatter(avgK, avgGC, color='red', label = "Average ER Giant Component")
+    plt.plot(avgK, true_outbreak, color = 'black', label = "True Outbreak")
+    #plt.errorbar(avgK, true_outbreak, yerr = condition_nums, color = 'black', ecolor = 'black')
+    
 
-    plt.plot(avgK, true_outbreak, color = 'black')
-    plt.errorbar(avgK, true_outbreak, yerr = condition_nums, color = 'black', ecolor = 'black')
-    plt.plot(avgK, avgGC, color='blue')
-
-    # for col in range(numTrials):
-    #     plt.scatter(avgK, giantComps[:,col], alpha= 0.05, color = 'blue')
+    for col in range(numTrials):
+        plt.scatter(avgK, giantComps[:,col], alpha= 0.05, color = 'blue')
+    handles, labels = plt.gca().get_legend_handles_labels()
+    sim_points = Line2D([0], [0], label='', marker = "o", 
+         color = "blue", linestyle='')
+    handles.extend([sim_points])
     plt.show()
+    
 
 
 ########################## TEST ##############################
