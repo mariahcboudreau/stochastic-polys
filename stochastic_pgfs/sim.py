@@ -186,7 +186,7 @@ def variance_sim(
                     [cond(all_og_roots) for cond in conditions]
                 )
             og_roots = all_og_roots[all_conditions]
-            delta = 10 * np.sqrt(norm(all_og_roots) * np.finfo(float).eps)
+            delta = 1000 * np.sqrt(norm(all_og_roots) * np.finfo(float).eps)
             # delta = np.sqrt(norm(all_og_roots) * 2**(-10))
             # delta = 10**(-8)
             #delta = 1
