@@ -22,6 +22,20 @@ import random
 #         """
 #         self.coef/np.sum(self.coef)
 
+def derivative(p_kCoeff):
+    p_kCoeff = np.array(p_kCoeff)
+    
+    if p_kCoeff.size == 0:
+        return np.array([0])
+    elif p_kCoeff.size == 1:
+        return np.array([0])
+    else:
+        primeCoeff = np.empty((len(p_kCoeff)-1))
+        for p in range(len(p_kCoeff)-1):
+            primeCoeff[p] = p_kCoeff[p+1]*(p+1)
+        
+    return primeCoeff 
+
 
 def double_factorial(n):
     return factorial2(n - 1)
@@ -41,12 +55,15 @@ def generate_sphere_point(dim):
 
 
 def companion_matrix(coefs):
-    coefs = np.array(coefs)
+    coefs = np.array(coefs) # needs the coefficients as if htey are the highest to lowest exponents
+                            # Constant last
     n = len(coefs)
     A = np.zeros((n - 1, n - 1))
     A[1:, :-1] = np.eye(n - 2)
     if coefs[0] != 0:
         A[0, :] = -coefs[1:n] / coefs[0]
+    else:
+        A[0, :] = -coefs[1:n]
     return A
 
 
@@ -58,7 +75,7 @@ def polynomial_roots(poly_coef):
 
 def in_bounds(coefs):
     return np.logical_and(
-        0 < np.real(coefs), np.real(coefs) <= (1 + np.finfo(float).eps)
+        0 <= np.real(coefs), np.real(coefs) < (0.99999999999999)
     )
 
 
@@ -103,5 +120,5 @@ def kappa_SCE(my_poly_coef, K=10, conditions=None, delta=0.001):
 
 
 # Test kappa_SCE with the polynomial coefficients for 2x^2 - 3x + 1
-test_kappa_sce = kappa_SCE([2, -3, 1], K=5)  # Reduced K for simplicity
-print(test_kappa_sce)
+# test_kappa_sce = kappa_SCE([2, -3, 1], K=5)  # Reduced K for simplicity
+# print(test_kappa_sce)
