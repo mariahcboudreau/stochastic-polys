@@ -56,8 +56,23 @@ def derivative(p_kCoeff):
     return primeCoeff 
 
 
+
 def in_bounds(coefs):
-    return np.logical_and(-np.finfo(float).eps <= np.real(coefs), np.real(coefs) < 0.999999999999)
+    #epsilon = #np.finfo(float).eps*5
+    epsilon = 0.0001
+
+    lower_bound = -epsilon
+    upper_bound = 1.0 + epsilon
+    
+    real_coefs = np.real(coefs)
+    
+    # Check if real_coefs are greater than or equal to lower_bound
+    lower_check = np.logical_or(real_coefs >= lower_bound, np.isclose(real_coefs, lower_bound, atol=epsilon))
+    
+    # Check if real_coefs are less than upper_bound
+    upper_check = np.logical_and(real_coefs <= upper_bound, np.isclose(real_coefs, upper_bound, atol=epsilon, rtol=0))
+    
+    return np.logical_and(lower_check, upper_check)
 
 
 def is_real(coefs):
@@ -158,10 +173,10 @@ def l_x_algo(
             else:
                 assert "The perturbation type is not valid. Please choose 'additive' or 'multiplicative'"
 
-        
+         
         if np.sum(derivative(perturbed_coefs)) > 1:
-            
             all_perturbed_roots = polynomial_roots(np.flip(perturbed_coefs_pgf))
+            #num = all_og_roots[is_real(all_og_roots)][1]
             if len(all_perturbed_roots[all_conditions]) > 1:
                 perturbed_roots = np.max(all_perturbed_roots[all_conditions])
             else:
