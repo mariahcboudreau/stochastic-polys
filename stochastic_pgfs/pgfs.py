@@ -45,3 +45,22 @@ def make_G_u_minus_u(coefs):
     G_minus_u_coef = np.copy(G.coef)
     G_minus_u_coef[1] -= 1
     return G_minus_u_coef
+
+#numerical inversion of the PGF
+def numerical_inversion(pgf,N = 100):
+    #G = np.vectorize(pgf)
+    G = pgf
+    n = np.arange(N)
+    c = np.exp(2*np.pi*1j*n/N)
+    pn = abs(np.fft.fft(G(c))/N)
+    return pn
+
+#percolated pgf
+def percolated_pgf(my_pgf,x,T):
+    new_x = 1-T+T*x
+    return my_pgf(new_x)
+
+
+
+
+
