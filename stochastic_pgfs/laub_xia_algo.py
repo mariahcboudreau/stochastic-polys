@@ -41,9 +41,23 @@ def polynomial_roots(poly_coef):
     C = companion_matrix(poly_coef)
     return np.linalg.eigvals(C)
 
+def derivative(p_kCoeff):
+    p_kCoeff = np.array(p_kCoeff)
+    
+    if p_kCoeff.size == 0:
+        return np.array([0])
+    elif p_kCoeff.size == 1:
+        return np.array([0])
+    else:
+        primeCoeff = np.empty((len(p_kCoeff)-1))
+        for p in range(len(p_kCoeff)-1):
+            primeCoeff[p] = p_kCoeff[p+1]*(p+1)
+        
+    return primeCoeff 
+
 
 def in_bounds(coefs):
-    return np.logical_and(0 <= np.real(coefs), np.real(coefs) < 0.999999999999)
+    return np.logical_and(-np.finfo(float).eps <= np.real(coefs), np.real(coefs) < 0.999999999999)
 
 
 def is_real(coefs):
@@ -65,6 +79,7 @@ def l_x_algo(
     conditions=None,
     delta=0.001,
     perturbation_type="additive",
+    bifurcation = False
 ):
     if conditions is None:
         conditions = []
@@ -75,22 +90,42 @@ def l_x_algo(
     Z = np.column_stack(vec_list)
 
     SCE_list = []
+    Diff_list = []
 
     # Root solving and error
     for i in range(K):
         if is_pgf:
-            my_pgf_coef = make_G_u_minus_u(my_poly_coef)
-            all_og_roots = polynomial_roots(my_pgf_coef)
+            if np.sum(derivative(my_poly_coef)) > 1:
+                my_pgf_coef = make_G_u_minus_u(my_poly_coef)
+                all_og_roots = polynomial_roots(np.flip(my_pgf_coef))
+                all_conditions = np.array([True] * len(all_og_roots))
+                if conditions:  # Double checks they are roots
+                    all_conditions = np.logical_and.reduce(
+                        [cond(all_og_roots) for cond in conditions]
+                    )
+                if len(all_og_roots[all_conditions]) > 1:
+                    og_roots = np.max(all_og_roots[all_conditions])
+                elif len(all_og_roots[all_conditions]) == 0:
+                    og_roots = 1
+                else:
+                    og_roots = all_og_roots[all_conditions][0]
+            else:
+                og_roots = 1
+                my_pgf_coef = make_G_u_minus_u(my_poly_coef)
+                all_og_roots = polynomial_roots(np.flip(my_pgf_coef))
+                all_conditions = np.array([True] * len(all_og_roots))
+                if conditions:  # Double checks they are roots
+                    all_conditions = np.logical_and.reduce(
+                        [cond(all_og_roots) for cond in conditions]
+                    )
 
-            all_conditions = np.array([True] * len(all_og_roots))
-            if conditions:  # Double checks they are roots
-                all_conditions = np.logical_and.reduce(
-                    [cond(all_og_roots) for cond in conditions]
-                )
-            og_roots = all_og_roots[all_conditions]
+            # if len(all_og_roots[all_conditions]) != 0:
+            #     og_roots = all_og_roots[all_conditions][0]
+            # else:
+            #     og_roots = 1
             delta = np.sqrt(norm(all_og_roots) * np.finfo(float).eps)
-            # delta = np.sqrt(norm(all_og_roots) * 2**(-16))
-            # delta = 10**(-8)
+            #delta = np.sqrt(norm(all_og_roots) * 2**(-16))
+            #delta = 10**(-8)
             #delta = 1
             if perturbation_type == "additive":
                 perturbed_coefs = my_poly_coef * (1 + delta * Z[:, i])
@@ -98,10 +133,11 @@ def l_x_algo(
                 perturbed_coefs = my_poly_coef * (1 * delta * Z[:, i])
             else:
                 assert "The perturbation type is not valid. Please choose 'additive' or 'multiplicative'"
-            perturbed_coefs = make_G_u_minus_u(perturbed_coefs)
+            perturbed_coefs_pgf = make_G_u_minus_u(perturbed_coefs)
+
 
         else:
-            all_og_roots = polynomial_roots(my_poly_coef)
+            all_og_roots = polynomial_roots(np.flip(my_poly_coef))
             all_conditions = np.array([True] * len(og_roots))
             if conditions:  # Double checks they are roots
                 all_conditions = np.logical_and.reduce(
@@ -121,33 +157,44 @@ def l_x_algo(
                 perturbed_coefs = my_poly_coef * (1 * delta * Z[:, i])
             else:
                 assert "The perturbation type is not valid. Please choose 'additive' or 'multiplicative'"
-        breakpoint()
 
-        all_perturbed_roots = polynomial_roots(perturbed_coefs)
-        all_conditions = np.array([True] * len(all_perturbed_roots))
-        if conditions:  # Double checks they are roots
-            all_conditions = np.logical_and.reduce(
-                    [cond(all_perturbed_roots) for cond in conditions]
-            )
         
-        if len(all_perturbed_roots[all_conditions]) > 1:#if there are multiple roots meeting conditions, take the smallest one
-            perturbed_roots = np.min(all_perturbed_roots[all_conditions])
-        elif len(all_perturbed_roots[all_conditions]) == 0:#if no roots meet the conditions
-            real_perturbed = all_perturbed_roots[np.isreal(all_perturbed_roots)]
-            if real_perturbed[1] < 0:
-                perturbed_roots = real_perturbed[1]
+        if np.sum(derivative(perturbed_coefs)) > 1:
+            
+            all_perturbed_roots = polynomial_roots(np.flip(perturbed_coefs_pgf))
+            if len(all_perturbed_roots[all_conditions]) > 1:
+                perturbed_roots = np.max(all_perturbed_roots[all_conditions])
+            else:
+                perturbed_roots = all_perturbed_roots[all_conditions][0]
         else:
-            perturbed_roots = all_perturbed_roots[all_conditions][0]
-        #breakpoint() 
+            perturbed_roots = 1
+            all_perturbed_roots = polynomial_roots(np.flip(perturbed_coefs_pgf))
+
+        # if len(all_perturbed_roots[all_conditions]) > 1:
+        #     perturbed_roots = np.min(all_perturbed_roots[all_conditions])
+        # elif len(all_perturbed_roots[all_conditions]) == 0:
+        #     real_perturbed = all_perturbed_roots[np.isreal(all_perturbed_roots)]
+        #     if real_perturbed[1] < 0:
+        #         perturbed_roots = real_perturbed[1]
+        #     else:
+        #         perturbed_roots = real_perturbed[real_perturbed > 0][0]
+        # else:
+        #     perturbed_roots = all_perturbed_roots[all_conditions][0]
+        
         SCE_list.append(np.abs(perturbed_roots - og_roots) / delta * np.abs(og_roots)) 
+        Diff_list.append(perturbed_roots - og_roots)
         ## Take the differences then divide by the original root value, percentage of original, and 
 
         # Both conditions perform this step after preprocessing
         # ONLY LOOK AT THIS FOR DEBUGGING
         all_perturbed_roots_conditions[i] = perturbed_roots
 
-        all_og_roots_conditions[i] = og_roots[0]
+        all_og_roots_conditions[i] = og_roots
 
     normed_sce = np.linalg.norm(SCE_list, axis=0) #provides the total displacement of all differences. 
-    return normed_sce
+
+    if bifurcation:
+        return Diff_list
+    else:
+        return normed_sce
     #return omega(K) / omega(N) * normed_sce

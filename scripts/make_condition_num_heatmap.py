@@ -12,8 +12,8 @@ date = datetime.today().strftime('%m-%d-%Y')
 
 
 
-alpha_vals = np.linspace(0.1,0.3,15)
-R0_vals = np.linspace(1,5,15)
+alpha_vals = np.linspace(0.1,0.3,20)
+R0_vals = np.linspace(1,5,20)
 
 
 N_max = 10  # Maximum value for N in the distribution
@@ -21,8 +21,8 @@ N_max = 10  # Maximum value for N in the distribution
 #create partial function for the condition number heatmap
 my_K = 1000
 
-lx_addative = partial(l_x_algo, K=1000, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='additive')
-lx_multiplicative = partial(l_x_algo, K=1000, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='multiplicative')
+lx_addative = partial(l_x_algo, K=10000, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='additive')
+lx_multiplicative = partial(l_x_algo, K=10000, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='multiplicative')
 
 
 condition_nums_addative= condition_number_heatmap(lx_addative, alpha_vals, R0_vals, N_max)
@@ -44,6 +44,7 @@ ax[1].imshow(condition_nums_multiplicative,
 ax[1].set(xlabel='R0 Values', ylabel='Alpha Values', title='Multiplicative Condition Numbers')
 plt.tight_layout()
 plt.show()
+
 
 
 
