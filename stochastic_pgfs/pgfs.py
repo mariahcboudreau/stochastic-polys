@@ -29,15 +29,6 @@ class PGF:
         self.coef / np.sum(self.coef)
 
 
-# #generate PGF corresponding to self consistent equation G(u) = u
-# def make_G_u_minus_u(G):
-#     G_prime = G.derivative()
-#     G_1 = PGF(G_prime.coef / G_prime(1.0))
-#     G_1_minus_u_coef = np.copy(G_1.coef)
-#     G_1_minus_u_coef[1] -= 1
-#     return G_1_minus_u_coef
-
-
 # generate PGF corresponding to self consistent equation G(u) = u without taking derivative inherantly
 def make_G_u_minus_u(coefs):
     G = PGF(coefs)
