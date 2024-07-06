@@ -282,6 +282,7 @@ def l_x_algo(
         og_roots = _solve_self_consistent_equation(my_poly_coef, conditions,derivative_test=True) # find the roots of the self consistent equation for the unperturbed degree sequence
         delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)  # set the delta value for the perturbation, see paper for more details
 
+
         alpha_i = Z[:, i]  # the random error vector for the ith iteration
 
         my_perturbed_poly_coefs = _perturb_polynomial(my_poly_coef, delta, alpha_i, perturbation_type)  # perturb the polynomial by the random error vector
@@ -294,6 +295,7 @@ def l_x_algo(
 
         SCE_list.append(np.abs(perturbed_roots - og_roots) / delta * np.abs(og_roots))
         Diff_list.append(perturbed_roots - og_roots)
+
 
         all_perturbed_roots_conditions[i] = perturbed_roots
 

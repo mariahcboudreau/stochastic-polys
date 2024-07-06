@@ -138,6 +138,38 @@ def pgfOutbreak(g1Outbreak):
     
     return root, outbreak
 
+
+def root_solver(coefs):
+    
+
+    if np.sum(derivative(coefs)) > 1:
+        my_pgf_coef = make_G_u_minus_u(coefs)
+        all_roots = polynomial_roots(np.flip(my_pgf_coef))
+        all_conditions = np.array([True] * len(all_roots))
+            
+        all_conditions = np.logical_and.reduce(
+            [cond(all_roots) for cond in [is_real, in_bounds]]
+        )
+        if len(all_roots[all_conditions]) > 1:
+            root = np.max(all_roots[all_conditions])
+        elif len(all_roots[all_conditions]) == 0:
+            root = 1
+        else:
+            root = all_roots[all_conditions][0]
+    else:
+        root = 1
+        my_pgf_coef = make_G_u_minus_u(coefs)
+        all_roots = polynomial_roots(np.flip(my_pgf_coef))
+
+    return root
+
+def mean_confidence_interval(data, confidence=0.95):
+    a = 1.0 * np.array(data)
+    n = len(a)
+    m, se = np.mean(a), scipy.stats.sem(a)
+    h = se * scipy.stats.t.ppf((1 + confidence) / 2., n-1)
+    return m, m-h, m+h
+
 def giant_comps(G, n):
 
     # Find all neighbors
@@ -209,25 +241,26 @@ def plotting_S_and_k():
 
         true_root, true_outbreak_origin[count] = pgfOutbreak(true_prime_infinite_G1)
 
+        true_Root[count] = root_solver(true_prime_infinite_G1)
 
-        if np.sum(derivative(true_prime_infinite_G1)) > 1:
-            my_pgf_coef = make_G_u_minus_u(true_prime_infinite_G1)
-            all_og_roots = polynomial_roots(np.flip(my_pgf_coef))
-            all_conditions = np.array([True] * len(all_og_roots))
+        # if np.sum(derivative(true_prime_infinite_G1)) > 1:
+        #     my_pgf_coef = make_G_u_minus_u(true_prime_infinite_G1)
+        #     all_og_roots = polynomial_roots(np.flip(my_pgf_coef))
+        #     all_conditions = np.array([True] * len(all_og_roots))
                 
-            all_conditions = np.logical_and.reduce(
-                [cond(all_og_roots) for cond in [is_real, in_bounds]]
-            )
-            if len(all_og_roots[all_conditions]) > 1:
-                true_Root[count] = np.max(all_og_roots[all_conditions])
-            elif len(all_og_roots[all_conditions]) == 0:
-                true_Root[count] = 1
-            else:
-                true_Root[count] = all_og_roots[all_conditions][0]
-        else:
-            true_Root[count] = 1
-            my_pgf_coef = make_G_u_minus_u(true_prime_infinite_G1)
-            all_og_roots = polynomial_roots(np.flip(my_pgf_coef))
+        #     all_conditions = np.logical_and.reduce(
+        #         [cond(all_og_roots) for cond in [is_real, in_bounds]]
+        #     )
+        #     if len(all_og_roots[all_conditions]) > 1:
+        #         true_Root[count] = np.max(all_og_roots[all_conditions])
+        #     elif len(all_og_roots[all_conditions]) == 0:
+        #         true_Root[count] = 1
+        #     else:
+        #         true_Root[count] = all_og_roots[all_conditions][0]
+        # else:
+        #     true_Root[count] = 1
+        #     my_pgf_coef = make_G_u_minus_u(true_prime_infinite_G1)
+        #     all_og_roots = polynomial_roots(np.flip(my_pgf_coef))
 
         # my_pgf_coef = make_G_u_minus_u(true_prime_infinite_G1)
         # all_og_roots = polynomial_roots(my_pgf_coef)
@@ -256,14 +289,15 @@ def plotting_S_and_k():
 
             p_k_sim_G1 = np.array(p_k_sim_G1)
             
-            if p_k_sim_G1.size == 0:
+            if p_k_sim_G1.size <= 1:
                 p_k_sim_G1 = np.array([0,0])
-            elif p_k_sim_G1.size >= 1:
+            elif p_k_sim_G1.size > 1:
                 if np.sum(p_k_sim_G1) != 0:
                     p_k_sim_G1 = p_k_sim_G1/np.sum(p_k_sim_G1)
 
-            # pgfSimRoot[count, t], pgfSimOutbreak[count, t] = solve_self_consistent_roots(p_k_sim_G1)
             
+            pgfSimRoot[count, t] = root_solver(p_k_sim_G1)
+            pgfSimOutbreak[count, t] = 1 - pgfSimRoot[count, t]
             
 
             outbreakSize[count, t], giantComps[count, t] = giant_comps(G, n)
@@ -284,23 +318,26 @@ def plotting_S_and_k():
 ########################### PLOTTING ###############################
     from matplotlib.lines import Line2D
 
+    plt.rcParams["font.family"] = "Times New Roman"
+
     plt.axis([0,3,0,1])
     plt.title("Population N = %d, Outbreak Threshold" %(n))
-    plt.xlabel("Average secondary degree")
-    plt.ylabel("S")
+    plt.xlabel(r"Average secondary degree, $\langle k \rangle$")
+    plt.ylabel("$S$")
 
     #print(winklerMeasure)
-    plt.scatter(avgK, avgGC, color='red', label = "Average ER Giant Component")
     plt.plot(avgK, true_outbreak, color = 'black', label = "True Outbreak")
-    #plt.errorbar(avgK, true_outbreak, yerr = condition_nums, color = 'black', ecolor = 'black')
-    
-
     for col in range(numTrials):
-        plt.scatter(avgK, giantComps[:,col], alpha= 0.05, color = 'blue')
+        plt.scatter(avgK, giantComps[:,col], alpha= 0.05, color = 'green')
     handles, labels = plt.gca().get_legend_handles_labels()
-    sim_points = Line2D([0], [0], label='', marker = "o", 
-         color = "blue", linestyle='')
+    sim_points = Line2D([0], [0], label='', marker = "o", color = "green", linestyle='')
+    plt.scatter(avgK, avgGC, color='blue', label = "Average ER Giant Component")
+   
+    
+    
     handles.extend([sim_points])
+    plt.ylims([0,1])
+    plt.legend(handles = handles)
     plt.show()
     
 
