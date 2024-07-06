@@ -177,18 +177,38 @@ def variance_sim(
     # Root solving and error
     for i in range(K):
         if is_pgf:
-            my_pgf_coef = make_G_u_minus_u(my_poly_coef)
-            all_og_roots = polynomial_roots(my_pgf_coef)
 
-            all_conditions = np.array([True] * len(all_og_roots))
-            if conditions:  # Double checks they are roots
-                all_conditions = np.logical_and.reduce(
-                    [cond(all_og_roots) for cond in conditions]
-                )
-            og_roots = all_og_roots[all_conditions]
-            delta = 1000 * np.sqrt(norm(all_og_roots) * np.finfo(float).eps)
-            # delta = np.sqrt(norm(all_og_roots) * 2**(-10))
-            # delta = 10**(-8)
+            if np.sum(derivative(my_poly_coef)) > 1:
+                my_pgf_coef = make_G_u_minus_u(my_poly_coef)
+                all_og_roots = polynomial_roots(np.flip(my_pgf_coef))
+                all_conditions = np.array([True] * len(all_og_roots))
+                if conditions:  # Double checks they are roots
+                    all_conditions = np.logical_and.reduce(
+                        [cond(all_og_roots) for cond in conditions]
+                    )
+                if len(all_og_roots[all_conditions]) > 1:
+                    og_roots = np.max(all_og_roots[all_conditions])
+                elif len(all_og_roots[all_conditions]) == 0:
+                    og_roots = 1
+                else:
+                    og_roots = all_og_roots[all_conditions][0]
+            else:
+                og_roots = 1
+                my_pgf_coef = make_G_u_minus_u(my_poly_coef)
+                all_og_roots = polynomial_roots(np.flip(my_pgf_coef))
+                all_conditions = np.array([True] * len(all_og_roots))
+                if conditions:  # Double checks they are roots
+                    all_conditions = np.logical_and.reduce(
+                        [cond(all_og_roots) for cond in conditions]
+                    )
+
+            # if len(all_og_roots[all_conditions]) != 0:
+            #     og_roots = all_og_roots[all_conditions][0]
+            # else:
+            #     og_roots = 1
+            #delta = np.sqrt(norm(all_og_roots) * np.finfo(float).eps)
+            delta = np.sqrt(norm(all_og_roots) * 2**(-16))
+            #delta = 10**(-8)
             #delta = 1
             if perturbation_type == "additive":
                 #breakpoint()
@@ -198,10 +218,10 @@ def variance_sim(
                 perturbed_coefs = my_poly_coef * (1 * delta * Z[:, i])
             else:
                 assert "The perturbation type is not valid. Please choose 'additive' or 'multiplicative'"
-            perturbed_coefs = make_G_u_minus_u(perturbed_coefs)
+            perturbed_coefs_pgf = make_G_u_minus_u(perturbed_coefs)
 
         else:
-            all_og_roots = polynomial_roots(my_poly_coef)
+            all_og_roots = polynomial_roots(np.flip(my_poly_coef))
             all_conditions = np.array([True] * len(og_roots))
             if conditions:  # Double checks they are roots
                 all_conditions = np.logical_and.reduce(
@@ -220,20 +240,19 @@ def variance_sim(
             else:
                 assert "The perturbation type is not valid. Please choose 'additive' or 'multiplicative'"
 
-        all_perturbed_roots = polynomial_roots(perturbed_coefs)
-        all_conditions = np.array([True] * len(all_perturbed_roots))
-        if conditions:  # Double checks they are roots
-            all_conditions = np.logical_and.reduce(
-                    [cond(all_perturbed_roots) for cond in conditions]
-            )
-        if len(all_perturbed_roots[all_conditions]) > 1:
-            perturbed_roots = np.min(all_perturbed_roots[all_conditions])
-        elif len(all_perturbed_roots[all_conditions]) == 0:
-            real_perturbed = all_perturbed_roots[np.isreal(all_perturbed_roots)]
-            if real_perturbed[1] < 0:
-                perturbed_roots = real_perturbed[1]
+        
+        if np.sum(derivative(perturbed_coefs)) > 1:
+            
+            all_perturbed_roots = polynomial_roots(np.flip(perturbed_coefs_pgf))
+            if len(all_perturbed_roots[all_conditions]) > 1:
+                perturbed_roots = np.max(all_perturbed_roots[all_conditions])
+            if len(all_perturbed_roots[all_conditions]) == 0:
+                perturbed_roots = 1
+            else:
+                perturbed_roots = all_perturbed_roots[all_conditions][0]
         else:
-            perturbed_roots = all_perturbed_roots[all_conditions][0]
+            perturbed_roots = 1
+            all_perturbed_roots = polynomial_roots(np.flip(perturbed_coefs_pgf))
 
         # Both conditions perform this step after preprocessing
         # ONLY LOOK AT THIS FOR DEBUGGING

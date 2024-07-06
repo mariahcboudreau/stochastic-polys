@@ -141,8 +141,8 @@ def l_x_algo(
             #     og_roots = all_og_roots[all_conditions][0]
             # else:
             #     og_roots = 1
-            delta = np.sqrt(norm(all_og_roots) * np.finfo(float).eps)
-            #delta = np.sqrt(norm(all_og_roots) * 2**(-16))
+            #delta = np.sqrt(norm(all_og_roots) * np.finfo(float).eps)
+            delta = np.sqrt(norm(all_og_roots) * 2**(-16))
             #delta = 10**(-8)
             #delta = 1
             if perturbation_type == "additive":
@@ -181,6 +181,8 @@ def l_x_algo(
             all_perturbed_roots = polynomial_roots(np.flip(perturbed_coefs_pgf))
             if len(all_perturbed_roots[all_conditions]) > 1:
                 perturbed_roots = np.max(all_perturbed_roots[all_conditions])
+            elif len(all_perturbed_roots[all_conditions]) == 0:
+                perturbed_roots = 1
             else:
                 perturbed_roots = all_perturbed_roots[all_conditions][0]
         else:
@@ -199,7 +201,7 @@ def l_x_algo(
         #     perturbed_roots = all_perturbed_roots[all_conditions][0]
         
         SCE_list.append(np.abs(perturbed_roots - og_roots) / delta * np.abs(og_roots)) 
-        Diff_list.append(perturbed_roots - og_roots)
+        Diff_list.append(1-perturbed_roots)
         ## Take the differences then divide by the original root value, percentage of original, and 
 
         # Both conditions perform this step after preprocessing
