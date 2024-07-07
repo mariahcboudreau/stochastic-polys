@@ -1,4 +1,4 @@
-from stochastic_pgfs.laub_xia_algo import l_x_algo, is_real, in_bounds
+from stochastic_pgfs.laub_xia_algo import l_x_algo, is_real, in_bounds, _solve_self_consistent_equation
 from stochastic_pgfs.pgfs import PGF, make_G_u_minus_u
 from stochastic_pgfs.viz_utils import outbreak_contours, condition_number_heatmap
 import numpy as np
@@ -43,8 +43,8 @@ def pgf_solver(my_poly_coef, conditions, solve_root = True):
         return 1 - og_roots
 
 
-alpha_vals = np.linspace(0.1,0.9,100)
-R0_vals = np.linspace(1,4,100)
+alpha_vals = np.linspace(0.1,0.9,80)
+R0_vals = np.linspace(1,4,80)
 
 
 N_max = 10  # Maximum value for N in the distribution
@@ -59,9 +59,11 @@ var_addative = partial(variance_sim, K=1000, conditions=[is_real, in_bounds],is_
 variance_sim_addative = condition_number_heatmap(var_addative, alpha_vals, R0_vals, N_max)
 condition_nums_addative= condition_number_heatmap(lx_addative, alpha_vals, R0_vals, N_max)
 
+roots = partial(_solve_self_consistent_equation, conditions=[is_real, in_bounds], solve_root = True)
+outbreaks = partial(_solve_self_consistent_equation, conditions=[is_real, in_bounds], solve_root = False)
 
-roots = partial(pgf_solver, conditions=[is_real, in_bounds], solve_root = True)
-outbreaks = partial(pgf_solver, conditions=[is_real, in_bounds], solve_root = False)
+# roots = partial(pgf_solver, conditions=[is_real, in_bounds], solve_root = True)
+# outbreaks = partial(pgf_solver, conditions=[is_real, in_bounds], solve_root = False)
 
 
 roots_lines = outbreak_contours(roots, alpha_vals, R0_vals, N_max)
@@ -72,6 +74,8 @@ outbreak_lines = outbreak_contours(outbreaks, alpha_vals, R0_vals, N_max)
 ### Heat Map
 
 plt.rcParams["font.family"] = "Times New Roman"
+import matplotlib as mpl
+mpl.rcParams.update(mpl.rcParamsDefault)
 X, Y = np.meshgrid(R0_vals, alpha_vals)
 fig, ax = plt.subplots(ncols = 2,figsize = (10,5), sharey=True)
 
@@ -79,13 +83,13 @@ ax[0].imshow(condition_nums_addative,
             extent = (min(R0_vals),max(R0_vals),min(alpha_vals),max(alpha_vals)),
              origin = 'lower',aspect = 'auto', cmap = 'Greens'
             )
-ax[0].set(xlabel= r'$R_0$ Values', ylabel=r'Dispersion Values', title='Condition Numbers')
+ax[0].set(xlabel= r'Average secondary cases, $R_0$', ylabel=r'Dispersion parameter', title='Condition Numbers')
 
 ax[1].imshow(variance_sim_addative,
             extent = (min(R0_vals),max(R0_vals),min(alpha_vals),max(alpha_vals)),
              origin = 'lower', aspect = 'auto', cmap = 'Greens'
             )
-ax[1].set(xlabel= r'$R_0$ Values', title='Variances')
+ax[1].set(xlabel= r'Average secondary cases, $R_0$', title='Variances of polynomial roots')
 plt.tight_layout()
 plt.show()
 plt.savefig("/Users/mcboudre/Documents/LSD_Lab/stochastic-polys/figures/additive_conds_variances_correctdist_r0_1-4_alpha_01-09_greens_"+date+".pdf", format = "pdf")

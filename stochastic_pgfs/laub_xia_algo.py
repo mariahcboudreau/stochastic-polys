@@ -131,12 +131,12 @@ def in_bounds(coefs):
     epsilon = np.finfo(float).eps
     epsilon = 1e-6
     lower_bound = -epsilon
-    upper_bound = 1.0 + epsilon
-    real_coefs = np.real(coefs)
+    upper_bound = 1.0 - epsilon
+    # real_coefs = np.real(coefs)
     # Check if real_coefs are greater than or equal to lower_bound
-    lower_check = np.logical_or(real_coefs >= lower_bound, np.isclose(real_coefs, lower_bound, atol=epsilon))
+    lower_check = np.logical_or(coefs >= lower_bound, np.isclose(coefs, lower_bound, atol=epsilon))
     # Check if real_coefs are less than upper_bound
-    upper_check = np.logical_or(real_coefs <= upper_bound, np.isclose(real_coefs, upper_bound, atol=epsilon, rtol=0))
+    upper_check = np.logical_or(coefs <= upper_bound, np.isclose(coefs, upper_bound, atol=epsilon, rtol=0))
     
     return np.logical_and(lower_check, upper_check)
 
@@ -176,11 +176,12 @@ def _filter_roots(poly_roots, conditions):
         if len(poly_roots[all_conditions]) >= 1:
                 poly_roots = poly_roots[all_conditions]
         else:
-            raise ValueError("No roots meet the conditions")
+            # raise ValueError("No roots meet the conditions")
+            poly_roots = np.array([1])
 
     return poly_roots
 
-def _solve_self_consistent_equation(degree_sequence, conditions=[is_real, in_bounds],derivative_test = True):
+def _solve_self_consistent_equation(degree_sequence, conditions=[is_real, in_bounds],derivative_test = True, solve_root = True):
         """
         Solve the self-consistent equation for a PGF G(u) = u by finding the roots of G(u) - u = 0.
         See sections C and D from DOI: 10.1103/PhysRevE.64.026118
@@ -194,14 +195,20 @@ def _solve_self_consistent_equation(degree_sequence, conditions=[is_real, in_bou
         - filtered_roots (list): The filtered roots that satisfy the given conditions.
        """
       
-        if (sum(degree_sequence < 1) & derivative_test == True): 
-            return np.array([1])
+        if (sum(derivative(degree_sequence)) < 1 & derivative_test == True): 
+            if solve_root:
+                return np.array([1])
+            else:
+                return np.array([0])
         else: 
             filtered_roots = np.array([1])
             my_pgf_coef = make_G_u_minus_u(degree_sequence)  # coefficients for G_u - u
             poly_roots = polynomial_roots(np.flip(my_pgf_coef))
             filtered_roots = _filter_roots(poly_roots, conditions)  # ensure roots are real and between 0 and 1
-            return filtered_roots
+            if solve_root:
+                return np.min(filtered_roots)
+            else:
+                return 1 - np.min(filtered_roots)
 
 
 def _perturb_polynomial(poly_coefs, delta, alpha_i, perturbation_type):
@@ -280,8 +287,8 @@ def l_x_algo(
     print(K)
     for i in range(K):
         og_roots = _solve_self_consistent_equation(my_poly_coef, conditions,derivative_test=True) # find the roots of the self consistent equation for the unperturbed degree sequence
-        delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)  # set the delta value for the perturbation, see paper for more details
-
+        #delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)  # set the delta value for the perturbation, see paper for more details
+        delta = np.sqrt(norm(og_roots) * 2**(-16))
 
         alpha_i = Z[:, i]  # the random error vector for the ith iteration
 
