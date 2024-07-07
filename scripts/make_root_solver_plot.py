@@ -7,7 +7,6 @@ from scipy.stats import nbinom
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-import matplotlib
 from datetime import datetime
 from functools import partial
 date = datetime.today().strftime('%m-%d-%Y')
@@ -43,40 +42,30 @@ def pgf_solver(my_poly_coef, conditions, solve_root = True):
     else:
         return 1 - og_roots
 
-alpha_vals = np.linspace(0.1,0.9,15)
-R0_vals = np.linspace(1,4,15)
+alpha_vals = [1.5, 2, 2.5, 3]
+R0_vals = [0.25, 0.75]
 
 
 N_max = 10  # Maximum value for N in the distribution
 
-#create partial function for the condition number heatmap
-my_K = 1000
 
-roots = partial(_solve_self_consistent_equation, conditions=[is_real, in_bounds], solve_root = True)
-outbreaks = partial(_solve_self_consistent_equation, conditions=[is_real, in_bounds], solve_root = False)
-
-
-roots_lines = outbreak_contours(roots, alpha_vals, R0_vals, N_max)
-outbreak_lines = outbreak_contours(outbreaks, alpha_vals, R0_vals, N_max)
-
-
-#### Contour plot
-plt.rcParams["font.family"] = "Times New Roman"
-import matplotlib as mpl
-mpl.rcParams.update(mpl.rcParamsDefault)
-X, Y = np.meshgrid(R0_vals, alpha_vals)
-fig, (ax1, ax2) = plt.subplots(1,2, sharey=True, figsize = (10,5))
-levels = np.arange(0, np.max(roots_lines), 0.025)
-CS = ax1.contour(X, Y, roots_lines, levels=levels)
-ax1.clabel(CS, inline=True, fontsize=8)
-ax1.set(ylabel = "Dispersion parameter", xlabel= r'Average secondary cases, $R_0$', title=r'Polynomial root, $u$')
-
-
-levels = np.arange(0.025, np.max(outbreak_lines), 0.025)
-CS = ax2.contour(X, Y, outbreak_lines, levels=levels)
-ax2.clabel(CS, inline=True, fontsize=8)
-ax2.set(xlabel= r'Average secondary cases, $R_0$', title=r'Outbreak size, $1-u$')
-
-# plt.show()
-plt.savefig("/Users/mcboudre/Documents/LSD_Lab/stochastic-polys/figures/outbreak_contours_correctdist_r0_1-4_alpha_01-09_greens_"+date+".pdf", format = "pdf")
+def root_plotter(solver, alpha_vals, R0_vals, N_max):
+    roots= np.zeros((len(alpha_vals), len(R0_vals)))
+    for i in range(len(alpha_vals)):
+        plt.rcParams["font.family"] = "Times New Roman"
+        plt.axis([0,3,0,1])
+        plt.title(r"$G_{1}(u) versus u")
+        plt.xlabel(r"Polynomial root, $u$")
+        plt.ylabel(r"$G_{1}(u)$")
+        for j in range(len(R0_vals)):
+            alpha = alpha_vals[i]
+            n = alpha
+            R0 = R0_vals[j] # d is the dispersion parameter
+            p = alpha / (R0 + alpha) #Changed this parameter
+            dist = nbinom(n=n, p=p)  # Scipy parameterizes differently, check this
+            my_pdf = dist.pmf(range(N_max + 1))
+            my_pdf = my_pdf/np.sum(my_pdf)
+            plt.plot(my_pdf)
+            roots[i,j] = solver(my_pdf)
+    return roots
 

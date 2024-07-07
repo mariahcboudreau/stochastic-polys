@@ -74,12 +74,37 @@ def polynomial_roots(poly_coef):
 
 
 def in_bounds(coefs):
-    return np.logical_and(
-        0 <= np.real(coefs), np.real(coefs) < (0.99999999999999)
-    )
+    """
+    Check if the coefficients of a polynomial are within a specified range.
+
+    Args:
+        coefs (numpy.ndarray): The coefficients of the polynomial.
+    Returns:
+        numpy.ndarray: A boolean array indicating whether each coefficient is within the specified range.
+    """
+    epsilon = np.finfo(float).eps
+    epsilon = 1e-6
+    lower_bound = -epsilon
+    upper_bound = 1.0 - epsilon
+    real_coefs = np.real(coefs)
+    # Check if real_coefs are greater than or equal to lower_bound
+    lower_check = np.logical_or(real_coefs >= lower_bound, np.isclose(real_coefs, lower_bound, atol=epsilon))
+    # Check if real_coefs are less than upper_bound
+    upper_check = np.logical_or(real_coefs <= upper_bound, np.isclose(real_coefs, upper_bound, atol=epsilon, rtol=0))
+    
+    return np.logical_and(lower_check, upper_check)
 
 
 def is_real(coefs):
+    """
+    Check if the given coefficients are real numbers.
+
+    Parameters:
+    coefs (array-like): The coefficients to be checked.
+
+    Returns:
+    bool: True if all coefficients are real, False otherwise.
+    """
     return np.isclose(np.imag(coefs), 0)
 
 
