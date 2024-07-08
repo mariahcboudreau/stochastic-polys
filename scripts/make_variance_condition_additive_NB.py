@@ -71,11 +71,11 @@ outbreak_lines = outbreak_contours(outbreaks, alpha_vals, R0_vals, N_max)
 
 
 
-### Heat Map
+### Heat Map for Condition number and variances 
 
-plt.rcParams["font.family"] = "Times New Roman"
 import matplotlib as mpl
 mpl.rcParams.update(mpl.rcParamsDefault)
+plt.rcParams["font.family"] = "Times New Roman"
 X, Y = np.meshgrid(R0_vals, alpha_vals)
 fig, ax = plt.subplots(ncols = 2,figsize = (10,5), sharey=True)
 
@@ -91,20 +91,54 @@ ax[1].imshow(variance_sim_addative,
             )
 ax[1].set(xlabel= r'Average secondary cases, $R_0$', title='Variances of polynomial roots')
 plt.tight_layout()
-plt.show()
-plt.savefig("/Users/mcboudre/Documents/LSD_Lab/stochastic-polys/figures/additive_conds_variances_correctdist_r0_1-4_alpha_01-09_greens_"+date+".pdf", format = "pdf")
+# plt.show()
+# plt.savefig("/Users/mcboudre/Documents/LSD_Lab/stochastic-polys/figures/additive_conds_variances_correctdist_r0_1-4_alpha_01-09_greens_80res_"+date+".pdf", format = "pdf")
 
 
-# #### Contour plot
+
+# Saving all files
+
+with open('/Users/mcboudre/Documents/LSD_Lab/stochastic-polys/data/additive_condition_nums_80res_'+date+'.npy', 'wb') as f:
+    np.save(f, condition_nums_addative)
+with open('/Users/mcboudre/Documents/LSD_Lab/stochastic-polys/data/additive_variances_80res_'+date+'.npy', 'wb') as f:
+    np.save(f, var_addative)
+with open('/Users/mcboudre/Documents/LSD_Lab/stochastic-polys/data/root_lines_80res_'+date+'.npy', 'wb') as f:
+    np.save(f, roots_lines) 
+with open('/Users/mcboudre/Documents/LSD_Lab/stochastic-polys/data/outbreak_lines_80res_'+date+'.npy', 'wb') as f:
+    np.save(f, outbreak_lines)   
+
+import matplotlib as mpl
+mpl.rcParams.update(mpl.rcParamsDefault)
+plt.rcParams["font.family"] = "Times New Roman"
+X, Y = np.meshgrid(R0_vals, alpha_vals)
+fig, ax = plt.subplots(ncols = 2,figsize = (10,5), sharey=True)
+
+#### Contour plot
 # X, Y = np.meshgrid(R0_vals, alpha_vals)
 # fig, (ax1, ax2) = plt.subplots(2, sharex=True, figsize = (10,5))
-# # levels = np.arange(0, np.max(condition_nums_addative), 750)
-# CS = ax1.contour(X, Y, condition_nums_addative)
-# ax1.clabel(CS, inline=True, fontsize=8)
-# ax1.set_title("Condition numbers")
+levels = np.arange(0, np.max(roots_lines), 0.025)
+CS = ax[0].contour(X, Y, roots_lines, levels = levels, cmap = "copper")
+ax[0].clabel(CS, inline=True, fontsize=8)
 
-# # levels = np.arange(0, np.max(condition_nums_addative), 750)
-# CS = ax2.contour(X, Y, variance_sim_addative)
-# # ax.clabel(CS, inline=True, fontsize=8)
-# ax2.set_title("Variances")
+levels = np.arange(0.025, np.max(outbreak_lines), 0.025)
+CS = ax[1].contour(X, Y, outbreak_lines, levels = levels, cmap = "copper")
+ax[1].clabel(CS, inline=True, fontsize=8)
+
+
+ax[0].imshow(condition_nums_addative,
+            extent = (min(R0_vals),max(R0_vals),min(alpha_vals),max(alpha_vals)),
+             origin = 'lower',aspect = 'auto', cmap = 'Greens'
+            )
+ax[0].set(xlabel= r'Average secondary cases, $R_0$', ylabel=r'Dispersion parameter', title='Condition numbers with polynomial roots')
+
+ax[1].imshow(condition_nums_addative,
+            extent = (min(R0_vals),max(R0_vals),min(alpha_vals),max(alpha_vals)),
+             origin = 'lower', aspect = 'auto', cmap = 'Greens'
+            )
+ax[1].set(xlabel= r'Average secondary cases, $R_0$', title='Condition numbers with outbreak sizes')
+
+
+plt.tight_layout()
 # plt.show()
+plt.savefig("/Users/mcboudre/Documents/LSD_Lab/stochastic-polys/figures/additive_conds_withoutbreak_correctdist_r0_1-4_alpha_01-09_greens_80res_"+date+".pdf", format = "pdf")
+

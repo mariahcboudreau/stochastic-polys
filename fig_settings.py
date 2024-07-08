@@ -13,8 +13,9 @@ import matplotlib.pylab as pylab
 def set_colors(n_colors=2):
     global cmap
     global pallette
-    cmap = "cmr.redshift"
-    qualitative_cmap = cmr.get_sub_cmap(cmap, 0.2, 0.8, N=n_colors)
+    #cmap = "cmr.redshift"
+    cmap = "cmr.emerald"
+    qualitative_cmap = cmr.get_sub_cmap(cmap, 0.2, 0.9, N=n_colors)
 
     pallette = qualitative_cmap.colors
     mpl.rcParams["axes.prop_cycle"] = mpl.cycler(color=pallette)
@@ -26,11 +27,11 @@ def set_fonts(extra_params={}):
         "font.sans-serif": ["Tahoma", "DejaVu Sans", "Lucida Grande", "Verdana"],
         "mathtext.fontset": "cm",
         "legend.fontsize": 12,
-        "axes.labelsize": 15,
-        "axes.titlesize": 15,
-        "xtick.labelsize": 15,
-        "ytick.labelsize": 15,
-        "figure.titlesize": 15,
+        "axes.labelsize": 20,
+        "axes.titlesize": 20,
+        "xtick.labelsize": 20,
+        "ytick.labelsize": 20,
+        "figure.titlesize": 20,
     }
     for key, value in extra_params.items():
         params[key] = value

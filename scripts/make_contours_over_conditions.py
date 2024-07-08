@@ -20,7 +20,7 @@ date = "07-06-2024"
 with open('/Users/mcboudre/Documents/LSD_Lab/stochastic-polys/data/additive_condition_nums_80res_'+date+'.npy', 'rb') as f:
     condition_nums_addative = np.load(f)
 with open('/Users/mcboudre/Documents/LSD_Lab/stochastic-polys/data/additive_variances_80res_'+date+'.npy', 'rb') as f:
-    var_addative = np.load(f)
+    var_addative = np.load(f, allow_pickle = True)
 with open('/Users/mcboudre/Documents/LSD_Lab/stochastic-polys/data/root_lines_80res_'+date+'.npy', 'rb') as f:
     roots_lines = np.load(f)
 with open('/Users/mcboudre/Documents/LSD_Lab/stochastic-polys/data/outbreak_lines_80res_'+date+'.npy', 'rb') as f:

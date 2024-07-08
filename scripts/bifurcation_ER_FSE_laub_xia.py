@@ -208,7 +208,7 @@ def plotting_S_and_k():
     avgK = np.linspace(0,3, num=31)
     numTrials = 100
     exp = 3
-    maxk = 20
+    maxk = 10
  
     outbreakSize = np.zeros((len(avgK), numTrials)) #Creating matrices 
     giantComps = np.zeros((len(avgK), numTrials))
@@ -278,6 +278,8 @@ def plotting_S_and_k():
 
         diffs.append(l_x_algo(true_prime_infinite_G1, K=1000, conditions=[is_real, in_bounds], is_pgf = True, perturbation_type="additive", bifurcation=True))
 
+        condition_nums[count] = l_x_algo(true_prime_infinite_G1, K=1000, conditions=[is_real, in_bounds], is_pgf = True, perturbation_type="additive", bifurcation=False)
+
         true_outbreak[count] = 1-true_Root[count]
 
 
@@ -344,4 +346,4 @@ def plotting_S_and_k():
 
 ########################## TEST ##############################
     
-plotting_S_and_k()
+# plotting_S_and_k()
