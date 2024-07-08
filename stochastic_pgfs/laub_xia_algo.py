@@ -284,7 +284,7 @@ def l_x_algo(
     Diff_list = []
 
     # Root solving and error
-    print(K)
+    #print(K)
     for i in range(K):
         og_roots = _solve_self_consistent_equation(my_poly_coef, conditions,derivative_test=True) # find the roots of the self consistent equation for the unperturbed degree sequence
         #delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)  # set the delta value for the perturbation, see paper for more details
@@ -316,3 +316,6 @@ def l_x_algo(
         return normed_sce
     # return omega(K) / omega(N) * normed_sce
 
+# print('Stop')
+# x = polynomial_roots([1,1,3,3])
+# print(x)
