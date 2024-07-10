@@ -12,8 +12,12 @@ date = datetime.today().strftime('%m-%d-%Y')
 
 
 
-alpha_vals = np.linspace(0.1,0.3,20)
-R0_vals = np.linspace(1,4,20)
+#alpha_vals = np.linspace(0.1,0.3,20)
+#R0_vals = np.linspace(1,5,20)
+
+
+alpha_vals = np.linspace(0.1,0.3,4)
+R0_vals = np.linspace(1,5,4)
 
 
 N_max = 10  # Maximum value for N in the distribution
