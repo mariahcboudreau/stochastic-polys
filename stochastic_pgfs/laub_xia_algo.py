@@ -203,6 +203,8 @@ def _solve_self_consistent_equation(degree_sequence, conditions=[is_real, in_bou
         else: 
             filtered_roots = np.array([1])
             my_pgf_coef = make_G_u_minus_u(degree_sequence)  # coefficients for G_u - u
+            #find poly roots with numpy 
+            np.polynomial.polynomial.polyroots(np.flip(my_pgf_coef))
             poly_roots = polynomial_roots(np.flip(my_pgf_coef))
             filtered_roots = _filter_roots(poly_roots, conditions)  # ensure roots are real and between 0 and 1
             if solve_root:
@@ -250,7 +252,7 @@ def l_x_metric(og_roots, perturbed_roots, delta, K, N):
 def l_x_algo(
     my_poly_coef,
     is_pgf=True,
-    K=10,
+    K=1000,
     conditions=None,
     delta=0.001,
     perturbation_type="additive",
@@ -284,18 +286,15 @@ def l_x_algo(
     Diff_list = []
 
     # Root solving and error
-    #print(K)
     for i in range(K):
         og_roots = _solve_self_consistent_equation(my_poly_coef, conditions,derivative_test=True) # find the roots of the self consistent equation for the unperturbed degree sequence
-        #delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)  # set the delta value for the perturbation, see paper for more details
-        delta = np.sqrt(norm(og_roots) * 2**(-16))
+        delta = delta*np.sqrt(norm(og_roots) * np.finfo(float).eps)  # set the delta value for the perturbation, see paper for more details
 
         alpha_i = Z[:, i]  # the random error vector for the ith iteration
 
         my_perturbed_poly_coefs = _perturb_polynomial(my_poly_coef, delta, alpha_i, perturbation_type)  # perturb the polynomial by the random error vector
 
         perturbed_roots = _solve_self_consistent_equation(my_perturbed_poly_coefs, conditions, derivative_test = True)  # find the roots of the self consistent equation for the unperturbed degree sequence
-
         #the corrcet root for the giant component size is the minimum
         og_roots = np.min(np.real(og_roots))
         perturbed_roots = np.min(np.real(perturbed_roots))
