@@ -9,8 +9,7 @@ Created on Tue Mar  8 11:10:39 2022
 Final FSE Code with expected U for error bars 
 """
 
-
-    
+#%%%%%
     
 import numpy as np
 import pandas as pd
@@ -281,7 +280,7 @@ def expectationOfCoeff(a_i_coeff, sigma):
     
     return np.exp(bottomValue)
 
-
+#%%%%%
 def runFSE(excessDegree, numTrials, exp, maxk):
 
     
@@ -523,7 +522,7 @@ def plotting_S_and_k():
                 
                 
                 
-                winklerMeasure[count, t], sigmas[count, t], primes[count, t], norms[count, t], truRoot[count,t] =  expectationOfU_FSE(p_k_sim_G1, true_prime_infinite_G1, true_root, n, maxk, False, deg)
+                #winklerMeasure[count, t], sigmas[count, t], primes[count, t], norms[count, t], truRoot[count,t] =  expectationOfU_FSE(p_k_sim_G1, true_prime_infinite_G1, true_root, n, maxk, False, deg)
                 leng+=1
                 #(1/np.abs(prime(true_root))) * np.abs(np.linalg.norm([phi(true_root)], 2))/(true_root * np.linalg.norm([denomP], 1))* np.sqrt(2/(math.pi*n)*(denomP))
             
@@ -535,21 +534,21 @@ def plotting_S_and_k():
         
         
         
-        winklerMeasure[winklerMeasure == np.inf] = 0 
+        #winklerMeasure[winklerMeasure == np.inf] = 0 
             
         avgGC = np.zeros((len(avgK)))    
         for row in range(len(avgK)):
             avgGC[row] = sum(giantComps[row][:])/numTrials 
             
           
-        avgWinkler = np.zeros((len(avgK)))    
-        for row in range(len(avgK)):
-            avgWinkler[row] = sum(winklerMeasure[row][:])/numTrials 
+        # avgWinkler = np.zeros((len(avgK)))    
+        # for row in range(len(avgK)):
+        #     avgWinkler[row] = sum(winklerMeasure[row][:])/numTrials 
             
        
         #avgWinklerInf = sum(winklerMeasureInfinite)/len(avgK)
 
-        print(winklerMeasure)
+       #print(winklerMeasure)
         print(sigmas)
         print(norms)
         print(primes)
@@ -562,8 +561,8 @@ def plotting_S_and_k():
         
         #print(winklerMeasure)
         
-        #plt.plot(avgK, true_outbreak, color = 'black')
-        plt.errorbar(avgK, true_outbreak, yerr = avgWinkler, color = 'black', ecolor = 'black')
+        plt.plot(avgK, true_outbreak, color = 'black')
+        #plt.errorbar(avgK, true_outbreak, yerr = avgWinkler, color = 'black', ecolor = 'black')
         plt.scatter(avgK, avgGC, color='black')
         
         for col in range(numTrials):
@@ -578,3 +577,5 @@ plotting_S_and_k()
 
 # Clean this code up
 
+
+# %%

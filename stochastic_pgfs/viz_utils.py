@@ -26,9 +26,11 @@ def outbreak_contours(solver, alpha_vals, R0_vals, N_max):
             alpha = alpha_vals[i]
             n = alpha
             R0 = R0_vals[j] # d is the dispersion parameter
-            p = alpha / (R0 + alpha) #Changed this parameter
+            p = alpha / (R0 + alpha) #This parameter comes from the scipy.nbinom documentation
             dist = nbinom(n=n, p=p)  # Scipy parameterizes differently, check this
             my_pdf = dist.pmf(range(N_max + 1))
             my_pdf = my_pdf/np.sum(my_pdf)
+            # if (R0 == 2.5) and (alpha == 0.1):
+            #     print('stop')
             contours[i,j] = solver(my_pdf)
     return contours
