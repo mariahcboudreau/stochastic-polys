@@ -48,7 +48,7 @@ R0_vals = [1, 2, 3]
 alpha_vals = [0.4]
 
 
-N_max = 10  # Maximum value for N in the distribution
+N_max = 1000  # Maximum value for N in the distribution
 
 roots= np.zeros((len(alpha_vals), len(R0_vals)))
 for i in range(len(alpha_vals)):

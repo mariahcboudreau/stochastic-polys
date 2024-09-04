@@ -93,6 +93,37 @@ def polynomial_roots(poly_coef):
     C = companion_matrix(poly_coef)
     return np.linalg.eigvals(C)
 
+
+
+
+
+def fast_polynomial_roots(poly_coef, solve_root = True):
+    """
+    Calculate the roots of a polynomial.
+
+    Parameters:
+    poly_coef (array-like): Coefficients of the polynomial in descending order.
+
+    Returns:
+    array-like: Array of complex numbers representing the roots of the polynomial.
+    """
+    
+    p = np.flip(poly_coef)
+    
+    u1 = 0.5
+    u2 = np.polyval(p, u1)
+    while  abs(u2-u1) > 10**(-5):
+        u1 = u2.copy()
+        u2 = np.polyval(p,u1)
+    usol = np.array([u2])
+    outbreaksol = np.array([1-u2])
+    
+    if solve_root:
+        return usol
+    else:
+        return outbreaksol
+
+
 def derivative(p_kCoeff):
     """
     Compute the derivative of a polynomial represented by its coefficients.
@@ -195,7 +226,7 @@ def _solve_self_consistent_equation(degree_sequence, conditions=[is_real, in_bou
         - filtered_roots (list): The filtered roots that satisfy the given conditions.
        """
       
-        if (sum(derivative(degree_sequence)) < 1 & derivative_test == True): 
+        if (sum(derivative(degree_sequence)) < 1 and derivative_test == True): 
             if solve_root:
                 return np.array([1])
             else:
@@ -286,7 +317,8 @@ def l_x_algo(
     # Root solving and error
     #print(K)
     for i in range(K):
-        og_roots = _solve_self_consistent_equation(my_poly_coef, conditions,derivative_test=True) # find the roots of the self consistent equation for the unperturbed degree sequence
+        og_roots = fast_polynomial_roots(my_poly_coef)
+        #og_roots = _solve_self_consistent_equation(my_poly_coef, conditions,derivative_test=True) # find the roots of the self consistent equation for the unperturbed degree sequence
         #delta = np.sqrt(norm(og_roots) * np.finfo(float).eps)  # set the delta value for the perturbation, see paper for more details
         delta = np.sqrt(norm(og_roots) * 2**(-16))
 
@@ -295,10 +327,10 @@ def l_x_algo(
         my_perturbed_poly_coefs = _perturb_polynomial(my_poly_coef, delta, alpha_i, perturbation_type)  # perturb the polynomial by the random error vector
 
         perturbed_roots = _solve_self_consistent_equation(my_perturbed_poly_coefs, conditions, derivative_test = True)  # find the roots of the self consistent equation for the unperturbed degree sequence
-
+        perturbed_roots = fast_polynomial_roots(my_perturbed_poly_coefs)
         #the corrcet root for the giant component size is the minimum
-        og_roots = np.min(np.real(og_roots))
-        perturbed_roots = np.min(np.real(perturbed_roots))
+        # og_roots = np.min(np.real(og_roots))
+        # perturbed_roots = np.min(np.real(perturbed_roots))
 
         SCE_list.append(np.abs(perturbed_roots - og_roots) / delta * np.abs(og_roots))
         Diff_list.append(perturbed_roots - og_roots)
@@ -317,5 +349,5 @@ def l_x_algo(
     # return omega(K) / omega(N) * normed_sce
 
 # print('Stop')
-# x = polynomial_roots([1,1,3,3])
+# x = fast_polynomial_roots([0.2,0.3,0.5], solve_root= True)
 # print(x)
