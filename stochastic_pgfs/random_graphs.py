@@ -15,7 +15,8 @@ def power_law(n,alpha):
 
 
 def powerlaw_degree_sequence(alpha,N_max = 100):
-    return power_law(np.arange(0,N_max,1),alpha)
+    degree_sequence = power_law(np.arange(1, N_max, 1), alpha)
+    return np.insert(degree_sequence, 0, 0)
 
 
 
