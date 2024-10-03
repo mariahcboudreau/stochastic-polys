@@ -4,6 +4,7 @@ from scipy.linalg import schur
 from scipy.special import factorial2
 import matplotlib.pyplot as plt
 import random
+import time
 
 from stochastic_pgfs.pgfs import *
 
@@ -80,35 +81,37 @@ def companion_matrix(coefs):
     return A
 
 
-def polynomial_roots(poly_coef):
+# def polynomial_roots(poly_coef):
+#     """
+#     Calculate the roots of a polynomial.
+
+#     Parameters:
+#     poly_coef (array-like): Coefficients of the polynomial in descending order.
+
+#     Returns:
+#     array-like: Array of complex numbers representing the roots of the polynomial.
+#     """
+#     C = companion_matrix(poly_coef)
+#     return np.linalg.eigvals(C)
+
+
+
+
+def fast_polynomial_roots(poly_coef, solve_root = True,tol = 1e-5):
     """
     Calculate the roots of a polynomial.
 
     Parameters:
     poly_coef (array-like): Coefficients of the polynomial in descending order.
+    tol(float): the tolerance at which the iterative root returns a solution
 
     Returns:
     array-like: Array of complex numbers representing the roots of the polynomial.
     """
-    C = companion_matrix(poly_coef)
-    return np.linalg.eigvals(C)
-
-
-
-
-
-def fast_polynomial_roots(poly_coef, solve_root = True):
-    """
-    Calculate the roots of a polynomial.
-
-    Parameters:
-    poly_coef (array-like): Coefficients of the polynomial in descending order.
-
-    Returns:
-    array-like: Array of complex numbers representing the roots of the polynomial.
-    """
-    
+   
     p = np.flip(poly_coef)
+    #breakpoint()
+    #p = poly_coef
     
     u1 = 0.5
     u2 = np.polyval(p, u1)
@@ -225,18 +228,20 @@ def _solve_self_consistent_equation(degree_sequence, conditions=[is_real, in_bou
         Returns:
         - filtered_roots (list): The filtered roots that satisfy the given conditions.
        """
-      
+       
         if (sum(derivative(degree_sequence)) < 1 and derivative_test == True): 
             if solve_root:
                 return np.array([1])
             else:
                 return np.array([0])
+            
         else: 
             filtered_roots = np.array([1])
             my_pgf_coef = make_G_u_minus_u(degree_sequence)  # coefficients for G_u - u
             #find poly roots with numpy 
-            np.polynomial.polynomial.polyroots(np.flip(my_pgf_coef))
-            poly_roots = polynomial_roots(np.flip(my_pgf_coef))
+            #poly_roots = fast_polynomial_roots(my_pgf_coef)
+            poly_roots = np.roots(np.flip(my_pgf_coef))
+            
             filtered_roots = _filter_roots(poly_roots, conditions)  # ensure roots are real and between 0 and 1
             if solve_root:
                 return np.min(filtered_roots)
@@ -321,13 +326,13 @@ def l_x_algo(
         og_roots = fast_polynomial_roots(my_poly_coef)
         #og_roots = _solve_self_consistent_equation(my_poly_coef, conditions,derivative_test=True) # find the roots of the self consistent equation for the unperturbed degree sequence
         #delta = delta*np.sqrt(norm(og_roots) * np.finfo(float).eps)  # set the delta value for the perturbation, see paper for more details
-        delta = np.sqrt(norm(og_roots) * 2**(-16))
+        #delta = np.sqrt(norm(og_roots) * 2**(-16))
+        delta =  2**(-16)
         alpha_i = Z[:, i]  # the random error vector for the ith iteration
 
         my_perturbed_poly_coefs = _perturb_polynomial(my_poly_coef, delta, alpha_i, perturbation_type)  # perturb the polynomial by the random error vector
-
         perturbed_roots = _solve_self_consistent_equation(my_perturbed_poly_coefs, conditions, derivative_test = True)  # find the roots of the self consistent equation for the unperturbed degree sequence
-        perturbed_roots = fast_polynomial_roots(my_perturbed_poly_coefs)
+        #perturbed_roots = fast_polynomial_roots(my_perturbed_poly_coefs)
         #the corrcet root for the giant component size is the minimum
         # og_roots = np.min(np.real(og_roots))
         # perturbed_roots = np.min(np.real(perturbed_roots))
