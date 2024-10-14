@@ -54,38 +54,68 @@ def mean_power_law(minval, maxval, alpha):
         return num / den
     
     
+
 def power_law_variance(alpha, k_min, k_max):
     """
     Calculate the variance of the degree distribution for a power-law graph.
 
     Parameters:
     alpha : float
-        The power-law exponent.
+        The power-law exponent (must be greater than 1).
     k_min : float
-        The minimum degree cutoff.
+        The minimum degree cutoff (must be positive).
     k_max : float
-        The maximum degree cutoff.
+        The maximum degree cutoff (must be greater than k_min).
 
     Returns:
     variance : float
         The variance of the degree distribution, or 'inf' if it diverges.
+
+    Raises:
+    ValueError: If input parameters are invalid.
+    ZeroDivisionError: If a division by zero occurs in calculations.
     """
-    # if alpha <= 2:
-    #     # Variance is infinite for alpha <= 2
-    #     return np.inf
-    
+    # Input validation
+    if k_min <= 0 or k_max <= 0:
+        raise ValueError("k_min and k_max must be positive numbers.")
+    if k_min >= k_max:
+        raise ValueError("k_min must be less than k_max.")
+    if alpha <= 1:
+        raise ValueError("alpha must be greater than 1 to avoid division by zero.")
+
     # Calculate the normalization constant C
-    C = (alpha - 1) / (k_min**(1 - alpha) - k_max**(1 - alpha))
-    
+    denominator = k_min**(1 - alpha) - k_max**(1 - alpha)
+    if denominator == 0:
+        raise ZeroDivisionError("Denominator in normalization constant C is zero.")
+    C = (alpha - 1) / denominator
+
     # Calculate the first moment (average degree)
-    avg_degree = C * (k_max**(2 - alpha) - k_min**(2 - alpha)) / (2 - alpha)
-    
+    if alpha == 2:
+        # Handle the special case when (2 - alpha) == 0
+        avg_degree = C * np.log(k_max / k_min)
+    else:
+        numerator_avg_degree = k_max**(2 - alpha) - k_min**(2 - alpha)
+        avg_degree = C * numerator_avg_degree / (2 - alpha)
+
     # Calculate the second moment
-    second_moment = C * (k_max**(3 - alpha) - k_min**(3 - alpha)) / (3 - alpha)
-    
+    if alpha == 3:
+        # Handle the special case when (3 - alpha) == 0
+        second_moment = C * np.log(k_max / k_min)
+    else:
+        numerator_second_moment = k_max**(3 - alpha) - k_min**(3 - alpha)
+        second_moment = C * numerator_second_moment / (3 - alpha)
+
     # Variance is the second moment minus the square of the average degree
     variance = second_moment - avg_degree**2
-    
+
+    # Check for negative variance due to numerical errors
+    if variance < 0:
+        variance = 0.0
+
+    # Check for infinite variance when alpha <= 2
+    if alpha <= 2:
+        variance = np.inf
+
     return variance
     
     
