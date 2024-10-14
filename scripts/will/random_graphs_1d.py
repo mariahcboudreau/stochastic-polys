@@ -20,41 +20,7 @@ date = datetime.today().strftime('%m-%d-%Y')
 from multiprocessing import Pool
 
 
-
-
-
-
-N_max = 100  # Maximum value for N in the distribution
-
-#create partial function for the condition number heatmap
-my_K = 100
-#my_K = 10000
-
-#create partial function for the condition number heatmap for addative and multiplicative noise
-lx_addative = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='additive')
-lx_multiplicative = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='multiplicative')
-
-
-mpl.rcParams.update(mpl.rcParamsDefault)
-plt.rcParams["font.family"] = "Times New Roman"
-
-
-poisson_degree_sequence_partial = partial(poisson_degree_sequence,N_max = N_max)
-powerlaw_degree_sequence_partial = partial(powerlaw_degree_sequence,N_max = N_max)
-
-lx_func = lx_addative
-#degree_sequence_func = poisson_degree_sequence
-data_dict_list = []
-
-#create the pgf for the degree sequence
-#my_pgf = PGF(my_degree_sequence)
-#perform percolation on the degree sequece by composing the pgf with the (1-T)+Tx 
-#my_percolated_pgf = partial(percolated_pgf,my_pgf,T = T)
-#invert the percolated pgf to get the coefficients
-#percolated_coef = numerical_inversion(my_percolated_pgf)
-
-
-def generate_T_values(control_param,dist_name,k_min = 1,k_max = N_max):
+def generate_T_values(control_param,dist_name,k_min = 1,k_max = 100):
     if dist_name == 'poisson':
         return 1/control_param
     elif dist_name == 'powerlaw':
@@ -67,26 +33,8 @@ def generate_T_values(control_param,dist_name,k_min = 1,k_max = N_max):
             return 0.0  # Or handle as per your model requirements
         else:
             return mean / variance
-    
-  
-   
-
-T_vals = np.linspace(0.001,1,60)
-
-alpha_vals = np.linspace(2.1,4,30)
-lmbd_vals = np.linspace(0,2,30)
-
-
-poisson_critical_values = [generate_T_values(lmbd_i,dist_name='poisson')  for lmbd_i in lmbd_vals]
-powerlaw_critical_values = [generate_T_values(alpha_i,dist_name='powerlaw')  for alpha_i in alpha_vals]
-# Concatenate the arrays
-all_critical_values = np.concatenate((poisson_critical_values, powerlaw_critical_values))
-# Filter points between 0 and 1
-filtered_critical_values = all_critical_values[(all_critical_values > 0) & (all_critical_values < 1)]
-
-
-
-
+        
+        
 def process_data(lmbd, T,degree_sequence_func,lx_func):
     print("T: ",T)
     print("lmbd: ",lmbd)
@@ -104,10 +52,40 @@ def process_data(lmbd, T,degree_sequence_func,lx_func):
 
     return {'lmbd': lmbd, 'T': T, 'sce': lx_func(degree_sequence), 'outbreak_size': outbreak_size}
 
+
+
+
+N_max = 100  # Maximum value for N in the distribution
+my_K = int(1e5)#number of samples per SCE estimte
+
+#params to sweep over
+T_vals = np.linspace(0.001,1,60)
+alpha_vals = np.linspace(3.1,4,30)
+lmbd_vals = np.linspace(0.001,2,30)
+
+
+T_vals = np.linspace(0.001,1,60)
+alpha_vals = np.array([3.1])
+lmbd_vals = np.array([1.2])
+
+
+
+
+#create partial function for the condition number heatmap for addative and multiplicative noise
+lx_addative = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='additive')
+lx_multiplicative = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='multiplicative')
+
+#partial functions for degree distriubtions
+poisson_degree_sequence_partial = partial(poisson_degree_sequence,N_max = N_max)
+powerlaw_degree_sequence_partial = partial(powerlaw_degree_sequence,N_max = N_max)
+
+#data structures for sweep
+data_dict_list = []
 dist_dict = {'poisson': poisson_degree_sequence_partial,'powerlaw': powerlaw_degree_sequence_partial}
 noise_dict = {'addative': lx_addative}
 
 control_params_dict = {'poisson': lmbd_vals,'powerlaw': alpha_vals}
+
 
 if __name__ == '__main__':
     for dist_name,dist_func in dist_dict.items(): 
@@ -119,13 +97,16 @@ if __name__ == '__main__':
                 results = []
                 for control_param in control_param_vals:
                     #add critical value to lise of T values
-                    critical_value = generate_T_values(control_param,dist_name)
+                    critical_value = generate_T_values(control_param,dist_name,k_max=N_max)
                     T_vals_plus_crit = np.concatenate([T_vals,np.array([critical_value])])
                     T_vals_plus_crit = np.sort(T_vals_plus_crit)
+                    T_vals_plus_crit = T_vals_plus_crit[(T_vals_plus_crit > 0) & (T_vals_plus_crit < 1)]#filter the critical occupation to ensure it is between 0 and 1
+                    
                     for T in T_vals_plus_crit:
                         results.append(pool.apply_async(process_data, (control_param, T,dist_func,noise_func)) )
-                #save results
+                        
                 data_dict_list = [result.get() for result in results]
+                #save results
                 df = pd.DataFrame(data_dict_list)
                 df = df.explode(['lmbd','sce','outbreak_size'])
                 df.outbreak_size = df.outbreak_size.apply(lambda x: x.real)
