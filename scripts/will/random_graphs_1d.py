@@ -27,8 +27,8 @@ from multiprocessing import Pool
 N_max = 100  # Maximum value for N in the distribution
 
 #create partial function for the condition number heatmap
-#my_K = 1000
-my_K = 10000
+my_K = 100
+#my_K = 10000
 
 #create partial function for the condition number heatmap for addative and multiplicative noise
 lx_addative = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='additive')
@@ -54,25 +54,29 @@ data_dict_list = []
 #percolated_coef = numerical_inversion(my_percolated_pgf)
 
 
-def generate_T_values(lmbd,dist_name,k_min = 1,k_max = N_max):
+def generate_T_values(control_param,dist_name,k_min = 1,k_max = N_max):
     if dist_name == 'poisson':
-        return 1/lmbd
-    if dist_name == 'powerlaw':
-        return mean_power_law(k_min,k_max,lmbd)/power_law_variance(k_min,k_max,lmbd)
+        return 1/control_param
+    elif dist_name == 'powerlaw':
+        mean = mean_power_law(control_param,k_min, k_max)
+        variance = power_law_variance( control_param,k_min, k_max)
+        
+        if np.isinf(variance):
+            # Handle infinite variance case
+            print("Variance is infinite for alpha <= 2. Returning critical point as zero.")
+            return 0.0  # Or handle as per your model requirements
+        else:
+            return mean / variance
     
+  
    
 
-    
-
-lmbd_vals = np.linspace(0,2,60)
-alpha_vals = np.linspace(2.1,4,60)
 T_vals = np.linspace(0.001,1,60)
-T_vals = np.array([1])
-lmbd_vals = np.array([1])
-alpha_vals = np.array([2])
+
+alpha_vals = np.linspace(2.1,4,30)
+lmbd_vals = np.linspace(0,2,30)
 
 
-#poisson_critical_values = generate_T_values(lmbd_vals,dist_name='poisson') 
 poisson_critical_values = [generate_T_values(lmbd_i,dist_name='poisson')  for lmbd_i in lmbd_vals]
 powerlaw_critical_values = [generate_T_values(alpha_i,dist_name='powerlaw')  for alpha_i in alpha_vals]
 # Concatenate the arrays
@@ -80,9 +84,6 @@ all_critical_values = np.concatenate((poisson_critical_values, powerlaw_critical
 # Filter points between 0 and 1
 filtered_critical_values = all_critical_values[(all_critical_values > 0) & (all_critical_values < 1)]
 
-
-T_vals= np.concatenate([filtered_critical_values,T_vals])
-T_vals = np.sort(T_vals)
 
 
 
@@ -103,9 +104,7 @@ def process_data(lmbd, T,degree_sequence_func,lx_func):
 
     return {'lmbd': lmbd, 'T': T, 'sce': lx_func(degree_sequence), 'outbreak_size': outbreak_size}
 
-#dist_dict = {'poisson': poisson_degree_sequence_partial,'powerlaw': powerlaw_degree_sequence_partial}
 dist_dict = {'poisson': poisson_degree_sequence_partial,'powerlaw': powerlaw_degree_sequence_partial}
-
 noise_dict = {'addative': lx_addative}
 
 control_params_dict = {'poisson': lmbd_vals,'powerlaw': alpha_vals}
@@ -116,28 +115,21 @@ if __name__ == '__main__':
         for noise_name,noise_func in noise_dict.items():
             print(noise_name)
             control_param_vals = control_params_dict[dist_name]
-            
             with Pool() as pool:
-                print(noise_func)
-                results = [pool.apply_async(process_data, (control_param, T, dist_func,noise_func)) for control_param in control_param_vals for T in T_vals]
+                results = []
+                for control_param in control_param_vals:
+                    #add critical value to lise of T values
+                    critical_value = generate_T_values(control_param,dist_name)
+                    T_vals_plus_crit = np.concatenate([T_vals,np.array([critical_value])])
+                    T_vals_plus_crit = np.sort(T_vals_plus_crit)
+                    for T in T_vals_plus_crit:
+                        results.append(pool.apply_async(process_data, (control_param, T,dist_func,noise_func)) )
+                #save results
                 data_dict_list = [result.get() for result in results]
-
-            df = pd.DataFrame(data_dict_list)
-            df = df.explode(['lmbd','sce','outbreak_size'])
-            df.outbreak_size = df.outbreak_size.apply(lambda x: x.real)
-    
-            #df.to_csv(f"data/random_graphs/random_graphs_sweep_{dist_name}_{noise_name}.csv")
-    
-    
-    # with Pool() as pool:
-    #     results = [pool.apply_async(process_data, (alpha, T, powerlaw_degree_sequence_partial)) for alpha in alpha_vals for T in T_vals]
-    #     data_dict_list = [result.get() for result in results]
-
-    #     df = pd.DataFrame(data_dict_list)
-    #     df = df.explode(['lmbd','sce','outbreak_size'])
-    #     df.outbreak_size = df.outbreak_size.apply(lambda x: x.real)
-    
-        #df.to_csv("data/random_graphs/random_graphs_sweep_powerlaw.csv")
+                df = pd.DataFrame(data_dict_list)
+                df = df.explode(['lmbd','sce','outbreak_size'])
+                df.outbreak_size = df.outbreak_size.apply(lambda x: x.real)
+                df.to_csv(f"data/random_graphs/random_graphs_sweep_{dist_name}_{noise_name}.csv")
 
 
 
