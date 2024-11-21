@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import random
 import time
 from numba import jit
+import tqdm
 
 from stochastic_pgfs.pgfs import *
 
@@ -315,14 +316,16 @@ def get_outbreak_size(my_degree_sequence,T):
 
 
 @jit(nopython=True)
-def iterate_until_convergence(pk, T=1, tol=1e-5, usol=0.5, max_iter=1000):
+def iterate_until_convergence(pk, T=1, tol=1e-5, usol=0.5, max_iter=int(1e4)):
     u1 = np.float64(usol)
     u2 = G1(u1, pk, T)
-    for _ in range(max_iter):
+    for i in range(max_iter):
         if abs(u2 - u1) < tol:
             break
         u1 = u2
         u2 = G1(u1, pk, T)
+    # if i == max_iter - 1:
+    #     print("Did not converge")
     return u1, u2
 
 
@@ -336,7 +339,7 @@ def l_x_algo(
     perturbation_type="additive",
     bifurcation=False,
     derivative_test = True,
-    max_iter=1000
+    max_iter=int(1e5)
 ):
     """
     Calculate the stability measure using the Laub-Xia algorithm as outlined in DOI: 10.1137/070702242
@@ -353,6 +356,7 @@ def l_x_algo(
         float or list: The stability measure or the bifurcation list.
 
     """
+    
     T = np.float64(T)    
     my_poly_coef = np.vstack((np.arange(0, my_poly_coef.shape[0], 1), my_poly_coef)).T
     
@@ -371,7 +375,6 @@ def l_x_algo(
     # Root solving and error
     #get machine precision 
     eps = np.finfo(float).eps
-    
     og_roots,_ = iterate_until_convergence(my_poly_coef,T = T, tol=eps, max_iter=max_iter)
     for i in range(K):
         og_roots,_ = iterate_until_convergence(my_poly_coef,T = T, tol=eps, max_iter=max_iter,usol=og_roots)
