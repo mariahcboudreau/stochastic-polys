@@ -5,6 +5,7 @@ from scipy.special import factorial2
 import matplotlib.pyplot as plt
 import random
 import time
+from numba import jit
 
 from stochastic_pgfs.pgfs import *
 
@@ -266,10 +267,11 @@ def _perturb_polynomial(poly_coefs, delta, alpha_i, perturbation_type):
         ValueError: If the perturbation type is neither "additive" nor "multiplicative".
     """
     # Perform perturbation, either additive or multiplicative
+    perturbed_coefs = np.copy(poly_coefs)
     if perturbation_type == "additive":
-        perturbed_coefs = poly_coefs * (1 + delta * alpha_i)
-    elif perturbation_type == "multiplicative": 
-        perturbed_coefs = poly_coefs * (1 * delta * alpha_i)
+        perturbed_coefs[:,1] = poly_coefs[:,1] * (1 + delta * alpha_i)
+    # elif perturbation_type == "multiplicative": 
+    #     perturbed_coefs = poly_coefs * (1 * delta * alpha_i)
     else:
         raise ValueError("Perturbation type must be either additive or multiplicative")
     
@@ -285,15 +287,56 @@ def l_x_metric(og_roots, perturbed_roots, delta, K, N):
     return omega(K) / omega(N) * np.mean(normed_sce)
 
 
+@jit(nopython=True)
+def G0(x, pk, T):
+    x = (1 - T) + T * x
+    return np.power(x, pk[:, 0]).dot(pk[:, 1])
+
+@jit(nopython=True)
+def G1(x, pk, T):
+    x = (1 - T) + T * x
+    numerator = np.power(x, pk[:, 0] - 1) * pk[:, 1] * pk[:, 0]
+    denominator = pk[:, 0].dot(pk[:, 1])
+    return numerator.sum() / denominator
+
+@jit(nopython=True)
+def G1_prime(x, pk, T):
+    x = (1 - T) + T * x
+    numerator = (pk[:, 0] - 1) * pk[:, 0] * pk[:, 1] * np.power(x, pk[:, 0] - 2)
+    denominator = pk[:, 0].dot(pk[:, 1])
+    return numerator.sum() / denominator
+
+def get_outbreak_size(my_degree_sequence,T):
+    pk = np.vstack((np.arange(0, my_degree_sequence.shape[0], 1), my_degree_sequence)).T
+    u1,u2 =iterate_until_convergence(pk,T = T)
+    outbreak_size = 1-u2 
+    return outbreak_size
+
+
+
+@jit(nopython=True)
+def iterate_until_convergence(pk, T=1, tol=1e-5, usol=0.5, max_iter=1000):
+    u1 = np.float64(usol)
+    u2 = G1(u1, pk, T)
+    for _ in range(max_iter):
+        if abs(u2 - u1) < tol:
+            break
+        u1 = u2
+        u2 = G1(u1, pk, T)
+    return u1, u2
+
+
 def l_x_algo(
     my_poly_coef,
     is_pgf=True,
     K=1000,
     conditions=None,
     delta=0.001,
+    T = 1.0,
     perturbation_type="additive",
     bifurcation=False,
-    derivative_test = True
+    derivative_test = True,
+    max_iter=1000
 ):
     """
     Calculate the stability measure using the Laub-Xia algorithm as outlined in DOI: 10.1137/070702242
@@ -310,40 +353,46 @@ def l_x_algo(
         float or list: The stability measure or the bifurcation list.
 
     """
+    T = np.float64(T)    
+    my_poly_coef = np.vstack((np.arange(0, my_poly_coef.shape[0], 1), my_poly_coef)).T
+    
     if conditions is None:
         conditions = []
+        
     all_og_roots_conditions = np.empty(K)
     all_perturbed_roots_conditions = np.empty(K)
-    N = len(my_poly_coef)
+    N = my_poly_coef.shape[0]
     vec_list = [generate_sphere_point(N) for _ in range(K)]  # Random error
     Z = np.column_stack(vec_list)
 
     SCE_list = []
-    Diff_list = []
+    Diff_list =  []
 
     # Root solving and error
+    #get machine precision 
+    eps = np.finfo(float).eps
+    
+    og_roots,_ = iterate_until_convergence(my_poly_coef,T = T, tol=eps, max_iter=max_iter)
     for i in range(K):
-        og_roots = fast_polynomial_roots(my_poly_coef)
+        og_roots,_ = iterate_until_convergence(my_poly_coef,T = T, tol=eps, max_iter=max_iter,usol=og_roots)
         #og_roots = _solve_self_consistent_equation(my_poly_coef, conditions,derivative_test=True) # find the roots of the self consistent equation for the unperturbed degree sequence
         #delta = delta*np.sqrt(norm(og_roots) * np.finfo(float).eps)  # set the delta value for the perturbation, see paper for more details
-        #delta = np.sqrt(norm(og_roots) * 2**(-16))
         delta =  2**(-16)
         alpha_i = Z[:, i]  # the random error vector for the ith iteration
 
         my_perturbed_poly_coefs = _perturb_polynomial(my_poly_coef, delta, alpha_i, perturbation_type)  # perturb the polynomial by the random error vector
-        perturbed_roots = _solve_self_consistent_equation(my_perturbed_poly_coefs, conditions, derivative_test = True)  # find the roots of the self consistent equation for the unperturbed degree sequence
+      
+        perturbed_roots,_ = iterate_until_convergence(my_perturbed_poly_coefs,T = T, tol=eps, max_iter=max_iter,usol=og_roots)
         #perturbed_roots = fast_polynomial_roots(my_perturbed_poly_coefs)
         #the corrcet root for the giant component size is the minimum
         # og_roots = np.min(np.real(og_roots))
         # perturbed_roots = np.min(np.real(perturbed_roots))
-
         SCE_list.append(np.abs(perturbed_roots - og_roots) / delta * np.abs(og_roots))
         Diff_list.append(perturbed_roots - og_roots)
 
 
-        all_perturbed_roots_conditions[i] = perturbed_roots
-
         all_og_roots_conditions[i] = og_roots
+
 
     normed_sce = np.linalg.norm(SCE_list, axis=0)  # provides the total displacement of all differences.
 
