@@ -13,6 +13,9 @@ import logging
 
 date = datetime.today().strftime('%m-%d-%Y')
 
+
+logging.basicConfig(level=logging.INFO)
+
 def calculate_critical_transition(my_degree_sequence):
     pk = np.vstack((np.arange(0, my_degree_sequence.shape[0], 1), my_degree_sequence)).T
     return 1 / G1_prime(1, pk, 1)
