@@ -13,7 +13,6 @@ import logging
 
 date = datetime.today().strftime('%m-%d-%Y')
 
-
 logging.basicConfig(level=logging.INFO)
 
 def calculate_critical_transition(my_degree_sequence):
@@ -64,7 +63,7 @@ if __name__ == '__main__':
                 T_vals_plus_crit = np.concatenate([T_vals, np.array([critical_value])])
                 T_vals_plus_crit = np.sort(T_vals_plus_crit)
                 T_vals_plus_crit = T_vals_plus_crit[(T_vals_plus_crit > 0) & (T_vals_plus_crit < 1)]
-                logging.log("Control Param: ", control_param, "T_vals_plus_crit: ", T_vals_plus_crit)
+                logging.info(f"Control Param: {control_param}, T_vals_plus_crit: {T_vals_plus_crit}")
 
                 with Pool() as pool:
                     results.extend(pool.apply_async(worker_task, (control_param, T_vals_plus_crit, dist_func, noise_func)).get())
