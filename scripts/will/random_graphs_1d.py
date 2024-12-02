@@ -1,4 +1,3 @@
-from mpi4py import MPI
 from multiprocessing import Pool
 import numpy as np
 import pandas as pd
@@ -10,6 +9,7 @@ from stochastic_pgfs.pgfs import PGF, make_G_u_minus_u, numerical_inversion, per
 from stochastic_pgfs.viz_utils import condition_number_heatmap
 from stochastic_pgfs.laub_xia_algo import l_x_algo, is_real, in_bounds, _solve_self_consistent_equation, G1_prime, get_outbreak_size, iterate_until_convergence
 from stochastic_pgfs.random_graphs import powerlaw_degree_sequence, poisson_degree_sequence
+import logging
 
 date = datetime.today().strftime('%m-%d-%Y')
 
@@ -48,10 +48,6 @@ def worker_task(control_param, T_vals_plus_crit, dist_func, noise_func):
     return results
 
 if __name__ == '__main__':
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    size = comm.Get_size()
-
     data_dict_list = []
 
     for dist_name, dist_func in dist_dict.items():
@@ -59,31 +55,25 @@ if __name__ == '__main__':
             control_param_vals = control_params_dict[dist_name]
             results = []
 
-            for i, control_param in enumerate(control_param_vals):
-                if i % size == rank:
-                    my_dist = dist_func(control_param)
-                    critical_value = calculate_critical_transition(my_dist)
-                    T_vals_plus_crit = np.concatenate([T_vals, np.array([critical_value])])
-                    T_vals_plus_crit = np.sort(T_vals_plus_crit)
-                    T_vals_plus_crit = T_vals_plus_crit[(T_vals_plus_crit > 0) & (T_vals_plus_crit < 1)]
+            for control_param in control_param_vals:
+                my_dist = dist_func(control_param)
+                critical_value = calculate_critical_transition(my_dist)
+                T_vals_plus_crit = np.concatenate([T_vals, np.array([critical_value])])
+                T_vals_plus_crit = np.sort(T_vals_plus_crit)
+                T_vals_plus_crit = T_vals_plus_crit[(T_vals_plus_crit > 0) & (T_vals_plus_crit < 1)]
+                logging.log("Control Param: ", control_param, "T_vals_plus_crit: ", T_vals_plus_crit)
 
-                    with Pool() as pool:
-                        results.extend(pool.apply_async(worker_task, (control_param, T_vals_plus_crit, dist_func, noise_func)).get())
+                with Pool() as pool:
+                    results.extend(pool.apply_async(worker_task, (control_param, T_vals_plus_crit, dist_func, noise_func)).get())
 
-            local_data_dict_list = results
-            all_data_dict_list = comm.gather(local_data_dict_list, root=0)
+            data_dict_list.extend(results)
 
-            if rank == 0:
-                for data in all_data_dict_list:
-                    data_dict_list.extend(data)
+            df = pd.DataFrame(data_dict_list)
+            df = df.explode(['lmbd', 'sce', 'outbreak_size'])
+            df.outbreak_size = df.outbreak_size.apply(lambda x: x.real)
+            df.to_csv(f"data/random_graphs/random_graphs_sweep_{dist_name}_{noise_name}.csv")
 
-                df = pd.DataFrame(data_dict_list)
-                df = df.explode(['lmbd', 'sce', 'outbreak_size'])
-                df.outbreak_size = df.outbreak_size.apply(lambda x: x.real)
-                df.to_csv(f"data/random_graphs/random_graphs_sweep_{dist_name}_{noise_name}.csv")
-
-    if rank == 0:
-        sns.relplot(data=df, x='T', y='outbreak_size', hue='lmbd')
+    sns.relplot(data=df, x='T', y='outbreak_size', hue='lmbd')
 
 
 

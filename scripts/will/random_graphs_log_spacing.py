@@ -18,6 +18,7 @@ import copy
 date = datetime.today().strftime('%m-%d-%Y')
 
 from multiprocessing import Pool
+import logging
 
         
 def calculate_critical_transition(my_degree_sequence):
@@ -79,6 +80,7 @@ if __name__ == '__main__':
                     my_dist = dist_func(control_param)
                     critical_value = calculate_critical_transition(my_dist)
                     T_vals_plus_crit = np.logspace(critical_value,critical_value+0.1,100)
+                    logging.log("Control Param: ", control_param, "T_vals_plus_crit: ", T_vals_plus_crit)
                     
                     for T in T_vals_plus_crit:
                         results.append(pool.apply_async(process_data, (control_param, T,dist_func,noise_func)) )
