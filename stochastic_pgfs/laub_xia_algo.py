@@ -4,7 +4,12 @@ from scipy.linalg import schur
 from scipy.special import factorial2
 import matplotlib.pyplot as plt
 import random
+import sys
+import os
 
+import os
+import sys
+sys.path.insert(1,os.getcwd())
 from stochastic_pgfs.pgfs import *
 
 
@@ -117,7 +122,11 @@ def fast_polynomial_roots(poly_coef, solve_root = True):
         u2 = np.polyval(p,u1)
     usol = np.array([u2])
     outbreaksol = np.array([1-u2])
-    
+
+    # ## Need to avoid Nan computation
+    # if np.isnan(usol[0]):
+    #     print('check')
+
     if solve_root:
         return usol
     else:
@@ -318,20 +327,24 @@ def l_x_algo(
 
     # Root solving and error
     for i in range(K):
-        og_roots = fast_polynomial_roots(my_poly_coef)
+        og_roots = fast_polynomial_roots(my_poly_coef)[0]
         #og_roots = _solve_self_consistent_equation(my_poly_coef, conditions,derivative_test=True) # find the roots of the self consistent equation for the unperturbed degree sequence
         #delta = delta*np.sqrt(norm(og_roots) * np.finfo(float).eps)  # set the delta value for the perturbation, see paper for more details
         delta = np.sqrt(norm(og_roots) * 2**(-16))
         alpha_i = Z[:, i]  # the random error vector for the ith iteration
 
         my_perturbed_poly_coefs = _perturb_polynomial(my_poly_coef, delta, alpha_i, perturbation_type)  # perturb the polynomial by the random error vector
-
-        perturbed_roots = _solve_self_consistent_equation(my_perturbed_poly_coefs, conditions, derivative_test = True)  # find the roots of the self consistent equation for the unperturbed degree sequence
-        perturbed_roots = fast_polynomial_roots(my_perturbed_poly_coefs)
+        my_perturbed_poly_coefs_normal = my_perturbed_poly_coefs / np.sum(my_perturbed_poly_coefs)
+        
+        #perturbed_roots = _solve_self_consistent_equation(my_perturbed_poly_coefs, conditions, derivative_test = True)  # find the roots of the self consistent equation for the unperturbed degree sequence
+        perturbed_roots = fast_polynomial_roots(my_perturbed_poly_coefs_normal)[0]
         #the corrcet root for the giant component size is the minimum
         # og_roots = np.min(np.real(og_roots))
         # perturbed_roots = np.min(np.real(perturbed_roots))
 
+        
+        # if np.isnan(perturbed_roots):
+        #     perturbed_roots = og_roots
         SCE_list.append(np.abs(perturbed_roots - og_roots) / delta * np.abs(og_roots))
         Diff_list.append(perturbed_roots - og_roots)
 
@@ -340,8 +353,10 @@ def l_x_algo(
 
         all_og_roots_conditions[i] = og_roots
 
+    SCE_list = np.array(SCE_list)
     normed_sce = np.linalg.norm(SCE_list, axis=0)  # provides the total displacement of all differences.
-
+    
+    
     if bifurcation:
         return Diff_list
     else:
