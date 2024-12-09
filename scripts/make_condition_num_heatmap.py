@@ -17,20 +17,20 @@ date = datetime.today().strftime('%m-%d-%Y')
 
 
 alpha_vals = np.linspace(0.1,0.3,4)
-R0_vals = np.linspace(1,5,4)
+R0_vals = np.linspace(0.5,5,4)
 
 
-N_max = 10  # Maximum value for N in the distribution
+# N_max = 10  # Maximum value for N in the distribution
 
-#create partial function for the condition number heatmap
-my_K = 1000
+# #create partial function for the condition number heatmap
+# my_K = 1000
 
-lx_addative = partial(l_x_algo, K=1000, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='additive')
-lx_multiplicative = partial(l_x_algo, K=1000, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='multiplicative')
+# lx_addative = partial(l_x_algo, K=1000, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='additive')
+# lx_multiplicative = partial(l_x_algo, K=1000, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='multiplicative')
 
 
-condition_nums_addative= condition_number_heatmap(lx_addative, alpha_vals, R0_vals, N_max)
-condition_nums_multiplicative = condition_number_heatmap(lx_multiplicative, alpha_vals, R0_vals, N_max)
+# condition_nums_addative= condition_number_heatmap(lx_addative, alpha_vals, R0_vals, N_max)
+# condition_nums_multiplicative = condition_number_heatmap(lx_multiplicative, alpha_vals, R0_vals, N_max)
 
 ### Heat Map
 X, Y = np.meshgrid(R0_vals, alpha_vals)
