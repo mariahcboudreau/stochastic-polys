@@ -43,13 +43,13 @@ my_K = int(1e4)#number of samples per SCE estimte
 max_iter = int(1e5)
 
 #params to sweep over
-# T_vals = np.linspace(0.001,1,60)
-# alpha_vals = np.linspace(3.1,4,30)
-# lmbd_vals = np.linspace(0.001,2,30)
+T_vals = np.linspace(0.001,1,60)
+alpha_vals = np.linspace(3.1,4,30)
+lmbd_vals = np.linspace(0.001,2,30)
 
 
-alpha_vals = np.array([3.1])
-lmbd_vals = np.array([1.2])
+#alpha_vals = np.array([3.1])
+#lmbd_vals = np.array([1.2])
 
 
 #create partial function for the condition number heatmap for addative and multiplicative noise
@@ -81,8 +81,7 @@ if __name__ == '__main__':
                     my_dist = dist_func(control_param)
                     critical_value = calculate_critical_transition(my_dist)
                     T_vals_plus_crit = np.logspace(critical_value,critical_value+0.1,100)
-                    logging.info("Control Param: ", control_param, "T_vals_plus_crit: ", T_vals_plus_crit)
-                    
+                    logging.info(f"Control Param: {control_param}")
                     for T in T_vals_plus_crit:
                         results.append(pool.apply_async(process_data, (control_param, T,dist_func,noise_func)) )
                         
