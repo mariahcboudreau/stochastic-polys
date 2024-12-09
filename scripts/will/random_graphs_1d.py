@@ -5,11 +5,24 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from datetime import datetime
 from functools import partial
-from stochastic_pgfs.pgfs import PGF, make_G_u_minus_u, numerical_inversion, percolated_pgf
-from stochastic_pgfs.viz_utils import condition_number_heatmap
-from stochastic_pgfs.laub_xia_algo import l_x_algo, is_real, in_bounds, _solve_self_consistent_equation, G1_prime, get_outbreak_size, iterate_until_convergence
-from stochastic_pgfs.random_graphs import powerlaw_degree_sequence, poisson_degree_sequence
+from numba import jit, config
 import logging
+from stochastic_pgfs.laub_xia_algo import l_x_algo, is_real, in_bounds, _solve_self_consistent_equation,G1_prime,get_outbreak_size
+from stochastic_pgfs.random_graphs import poisson_degree_sequence, powerlaw_degree_sequence
+
+
+# Enable Numba logging
+config.LOGNAME = "numba.jitclass"
+config.DEBUG = False
+logging.basicConfig(level=logging.INFO)
+
+# Add a test function with Numba
+@jit(nopython=True)
+def test_numba():
+    x = 0
+    for i in range(100):
+        x += i
+    return x
 
 date = datetime.today().strftime('%m-%d-%Y')
 
@@ -24,7 +37,7 @@ def process_data(lmbd, T, degree_sequence_func, lx_func):
     outbreak_size = get_outbreak_size(my_degree_sequence, T)
     return {'lmbd': lmbd, 'T': T, 'sce': lx_func(my_degree_sequence, T=T), 'outbreak_size': outbreak_size}
 
-N_max = 1000  # Maximum value for N in the distribution
+N_max = 500#1000  # Maximum value for N in the distribution
 my_K = int(1e5)  # number of samples per SCE estimate
 max_iter = int(1e5)
 
@@ -50,6 +63,13 @@ def worker_task(control_param, T_vals_plus_crit, dist_func, noise_func):
     return results
 
 if __name__ == '__main__':
+    print("Testing Numba compilation...")
+    # First call compiles the function
+    result1 = test_numba()
+    # Second call uses compiled version
+    result2 = test_numba()
+    print("Numba test complete")
+    
     data_dict_list = []
 
     for dist_name, dist_func in dist_dict.items():
@@ -60,6 +80,7 @@ if __name__ == '__main__':
             for control_param in control_param_vals:
                 my_dist = dist_func(control_param)
                 critical_value = calculate_critical_transition(my_dist)
+                critical_value + 1e-4
                 T_vals_plus_crit = np.concatenate([T_vals, np.array([critical_value])])
                 T_vals_plus_crit = np.sort(T_vals_plus_crit)
                 T_vals_plus_crit = T_vals_plus_crit[(T_vals_plus_crit > 0) & (T_vals_plus_crit < 1)]
@@ -75,7 +96,25 @@ if __name__ == '__main__':
             df.outbreak_size = df.outbreak_size.apply(lambda x: x.real)
             df.to_csv(f"data/random_graphs/random_graphs_sweep_{dist_name}_{noise_name}.csv")
 
-    sns.relplot(data=df, x='T', y='outbreak_size', hue='lmbd')
+
+
+
+# N_max = 1000  # Maximum value for N in the distribution
+# my_K = int(1e1)  # number of samples per SCE estimate
+# max_iter = int(1e5)
+
+# # params to sweep over
+# T_vals = np.linspace(0.001, 1, 60)
+# alpha_vals = np.linspace(1.8, 4, 30)
+# lmbd_vals = np.linspace(0.001, 2, 30)
+
+# lx_additive = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds], is_pgf=True, perturbation_type='additive', max_iter=max_iter)
+# lx_multiplicative = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds], is_pgf=True, perturbation_type='multiplicative', max_iter=max_iter)
+
+# poisson_degree_sequence_partial = partial(poisson_degree_sequence, N_max=N_max)
+# powerlaw_degree_sequence_partial = partial(powerlaw_degree_sequence, N_max=N_max)
+
+
 
 
 
