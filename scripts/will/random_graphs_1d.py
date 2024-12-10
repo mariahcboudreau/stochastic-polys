@@ -12,9 +12,9 @@ from stochastic_pgfs.random_graphs import poisson_degree_sequence, powerlaw_degr
 
 
 # Enable Numba logging
-config.LOGNAME = "numba.jitclass"
+#config.LOGNAME = "numba.jitclass"
 config.DEBUG = False
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 # Add a test function with Numba
 @jit(nopython=True)
@@ -38,16 +38,17 @@ def process_data(lmbd, T, degree_sequence_func, lx_func):
     return {'lmbd': lmbd, 'T': T, 'sce': lx_func(my_degree_sequence, T=T), 'outbreak_size': outbreak_size}
 
 N_max = 500#1000  # Maximum value for N in the distribution
-my_K = int(1e5)  # number of samples per SCE estimate
+my_K = int(1e4)  # number of samples per SCE estimate
 max_iter = int(1e5)
+tol = 1e-5
 
 # params to sweep over
 T_vals = np.linspace(0.001, 1, 60)
 alpha_vals = np.linspace(1.8, 4, 30)
 lmbd_vals = np.linspace(0.001, 2, 30)
 
-lx_additive = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds], is_pgf=True, perturbation_type='additive', max_iter=max_iter)
-lx_multiplicative = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds], is_pgf=True, perturbation_type='multiplicative', max_iter=max_iter)
+lx_additive = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds], is_pgf=True, perturbation_type='additive', max_iter=max_iter,tol = tol)
+lx_multiplicative = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds], is_pgf=True, perturbation_type='multiplicative', max_iter=max_iter,tol = tol)
 
 poisson_degree_sequence_partial = partial(poisson_degree_sequence, N_max=N_max)
 powerlaw_degree_sequence_partial = partial(powerlaw_degree_sequence, N_max=N_max)

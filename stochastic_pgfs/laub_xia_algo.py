@@ -9,6 +9,7 @@ from numba import jit
 import tqdm
 
 from stochastic_pgfs.pgfs import *
+import logging
 
 
 def double_factorial(n):
@@ -314,7 +315,6 @@ def get_outbreak_size(my_degree_sequence,T):
     return outbreak_size
 
 
-
 @jit(nopython=True)
 def iterate_until_convergence(pk, T=1, tol=1e-5, usol=0.5, max_iter=int(1e4)):
     u1 = np.float64(usol)
@@ -324,8 +324,8 @@ def iterate_until_convergence(pk, T=1, tol=1e-5, usol=0.5, max_iter=int(1e4)):
             break
         u1 = u2
         u2 = G1(u1, pk, T)
-    # if i == max_iter - 1:
-    #     print("Did not converge")
+    if i == max_iter - 1:
+        print("Did not converge")
     return u1, u2
 
 
@@ -339,7 +339,8 @@ def l_x_algo(
     perturbation_type="additive",
     bifurcation=False,
     derivative_test = True,
-    max_iter=int(1e5)
+    max_iter=int(1e5),
+    tol=1e-5
 ):
     """
     Calculate the stability measure using the Laub-Xia algorithm as outlined in DOI: 10.1137/070702242
@@ -374,28 +375,33 @@ def l_x_algo(
 
     # Root solving and error
     #get machine precision 
-    eps = np.finfo(float).eps
-    og_roots,_ = iterate_until_convergence(my_poly_coef,T = T, tol=eps, max_iter=max_iter)
+    #print("Finding unperturbed root...")
+    og_roots, _ = iterate_until_convergence(my_poly_coef, T=T, tol=tol, max_iter=max_iter)
+    
     for i in range(K):
-        og_roots,_ = iterate_until_convergence(my_poly_coef,T = T, tol=eps, max_iter=max_iter,usol=og_roots)
-        #og_roots = _solve_self_consistent_equation(my_poly_coef, conditions,derivative_test=True) # find the roots of the self consistent equation for the unperturbed degree sequence
-        #delta = delta*np.sqrt(norm(og_roots) * np.finfo(float).eps)  # set the delta value for the perturbation, see paper for more details
-        delta =  2**(-16)
-        alpha_i = Z[:, i]  # the random error vector for the ith iteration
-
-        my_perturbed_poly_coefs = _perturb_polynomial(my_poly_coef, delta, alpha_i, perturbation_type)  # perturb the polynomial by the random error vector
-      
-        perturbed_roots,_ = iterate_until_convergence(my_perturbed_poly_coefs,T = T, tol=eps, max_iter=max_iter,usol=og_roots)
-        #perturbed_roots = fast_polynomial_roots(my_perturbed_poly_coefs)
-        #the corrcet root for the giant component size is the minimum
-        # og_roots = np.min(np.real(og_roots))
-        # perturbed_roots = np.min(np.real(perturbed_roots))
-        SCE_list.append(np.abs(perturbed_roots - og_roots) / delta * np.abs(og_roots))
-        Diff_list.append(perturbed_roots - og_roots)
-
-
-        all_og_roots_conditions[i] = og_roots
-
+        if i % 1000 == 0:
+            logging.debug(f"Processing perturbation {i}/{K}")
+            
+        # Don't recompute unperturbed root
+        delta = 2**(-16)
+        alpha_i = Z[:, i]
+        
+        my_perturbed_poly_coefs = _perturb_polynomial(my_poly_coef, delta, alpha_i, perturbation_type)
+        
+        # Use original root as initial guess for perturbed system
+        perturbed_roots, _ = iterate_until_convergence(
+            my_perturbed_poly_coefs, 
+            T=T, 
+            tol=tol, 
+            max_iter=max_iter,
+            usol=og_roots  # Use previous solution as initial guess
+        )
+        
+        # Only append if convergence achieved
+        if perturbed_roots is not None:
+            SCE_list.append(np.abs(perturbed_roots - og_roots) / delta * np.abs(og_roots))
+            Diff_list.append(perturbed_roots - og_roots)
+            all_og_roots_conditions[i] = og_roots
 
     normed_sce = np.linalg.norm(SCE_list, axis=0)  # provides the total displacement of all differences.
 
