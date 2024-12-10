@@ -38,7 +38,7 @@ def process_data(lmbd, T, degree_sequence_func, lx_func):
     return {'lmbd': lmbd, 'T': T, 'sce': lx_func(my_degree_sequence, T=T), 'outbreak_size': outbreak_size}
 
 N_max = 500#1000  # Maximum value for N in the distribution
-my_K = int(1e4)  # number of samples per SCE estimate
+my_K = int(1e5)  # number of samples per SCE estimate
 max_iter = int(1e5)
 tol = 1e-5
 
@@ -81,7 +81,6 @@ if __name__ == '__main__':
             for control_param in control_param_vals:
                 my_dist = dist_func(control_param)
                 critical_value = calculate_critical_transition(my_dist)
-                critical_value + 1e-4
                 T_vals_plus_crit = np.concatenate([T_vals, np.array([critical_value])])
                 T_vals_plus_crit = np.sort(T_vals_plus_crit)
                 T_vals_plus_crit = T_vals_plus_crit[(T_vals_plus_crit > 0) & (T_vals_plus_crit < 1)]
