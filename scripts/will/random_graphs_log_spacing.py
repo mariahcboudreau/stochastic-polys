@@ -41,6 +41,7 @@ def process_data(lmbd, T,degree_sequence_func,lx_func):
 N_max = 100  # Maximum value for N in the distribution
 my_K = int(1e4)#number of samples per SCE estimte
 max_iter = int(1e5)
+tol = 1e-5
 
 #params to sweep over
 T_vals = np.linspace(0.001,1,60)
@@ -48,7 +49,7 @@ alpha_vals = np.linspace(3.1,4,30)
 lmbd_vals = np.linspace(0.001,2,30)
 
 #create partial function for the condition number heatmap for addative and multiplicative noise
-lx_addative = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='additive',max_iter = max_iter)
+lx_addative = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='additive',max_iter = max_iter,tol = tol)
 lx_multiplicative = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='multiplicative',max_iter = max_iter)
 
 #partial functions for degree distriubtions
@@ -80,7 +81,7 @@ if __name__ == '__main__':
                     T_vals_plus_crit = np.logspace(critical_value,critical_value+0.1,100)
                     logging.info(f"Control Param: {control_param}")
                     for T in T_vals_plus_crit:
-                        results.append(pool.apply_async(process_data, (control_param, T,dist_func,noise_func)) )
+                        results.append(pool.apply_async(process_data, (control_param, T,dist_func,noise_func)))
                         
                 data_dict_list = [result.get() for result in results]
                 #save results
