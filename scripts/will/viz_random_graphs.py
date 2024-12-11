@@ -3,7 +3,12 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib as mpl 
 from matplotlib.gridspec import GridSpec
+import numpy as np
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
+from stochastic_pgfs.laub_xia_algo import (
+        G1_prime
+)
 
 from stochastic_pgfs.random_graphs import (
     er_degree_sequence,
@@ -11,59 +16,50 @@ from stochastic_pgfs.random_graphs import (
     poisson_degree_sequence,
     make_config_model,
     plot_graph,
-    mean_power_law,
-    power_law_variance
+    mean_power_law
 )
 
-#df = pd.read_csv("data/")
-# df = pd.read_csv("data/random_graphs/random_graphs_sweep_poisson_addative.csv")
-# df_pl = pd.read_csv("data/random_graphs/random_graphs_sweep_powerlaw_addative.csv")
+
+# Each process reads the data
+df = pd.read_csv("data/random_graphs/random_graphs_sweep_poisson_additive.csv")
+df_pl = pd.read_csv("data/random_graphs/random_graphs_sweep_powerlaw_additive.csv")
+df_pl = df_pl.query('lmbd > 2.0')
+
+N_max = 100
+
+def calculate_critical_transition(my_degree_sequence):
+    pk = np.vstack((np.arange(0, my_degree_sequence.shape[0], 1), my_degree_sequence)).T
+    return 1/G1_prime(1, pk, 1)
+
+def power_law_critical_transition(alpha):
+        power_law_degree_seq = powerlaw_degree_sequence(alpha = alpha,N_max = N_max)
+        return calculate_critical_transition(power_law_degree_seq)
+
+def poisson_critical_transition(lmbd):
+        poisson_degree_seq = poisson_degree_sequence(lmbd, N_max = N_max)
+        return calculate_critical_transition(poisson_degree_seq)
 
 
-df = pd.read_csv("data/random_graphs/random_graphs_sweep_poisson_multiplicative.csv")
-df_pl = pd.read_csv("data/random_graphs/random_graphs_sweep_powerlaw_multiplicative.csv")
+# Calculate critical transitions in parallel
+powerlaw_params = df_pl['lmbd'].unique()
+poisson_params = df['lmbd'].unique()
 
-df['T'] = df['T']- 1/df['lmbd']
-df = df.query('T > -5')
+powerlaw_critical_transition = pd.Series([power_law_critical_transition(gamma) for gamma in powerlaw_params])
+poisson_critical_transition = pd.Series([poisson_critical_transition(gamma) for gamma in poisson_params])
 
-powerlaw_critical =  mean_power_law(df['lmbd'],1,100)
-power_law_variance(df['lmbd'],1,100)
+powerlaw_critical_transition = pd.Series(np.where(powerlaw_critical_transition > 1, 1, powerlaw_critical_transition))
+poisson_critical_transition = pd.Series(np.where(poisson_critical_transition > 1, 1, poisson_critical_transition))
 
-df_pl['T'] = df_pl['T'] - powerlaw_critical
-df_pl = df_pl.query('T > -5')
-
-df_pl = df_pl.query("lmbd > 2.0")
-
+# Only root process creates the visualization
 mpl.rcParams.update(mpl.rcParamsDefault)
 plt.rcParams["font.family"] = "Times New Roman"
 
-
-# def visualize_networks(i, ax):
-#     n = 50
-#     match i:
-#         case 0:
-#             e = [(i, j) for i, j in nx.Graph(A).edges]
-#         case 1:
-#             A = truncated_power_law_configuration(n, 2, 20, -3, seed=0)
-#             e = [(i, j) for i, j in nx.Graph(A).edges]
-#         case 2:
-#             k = 2  # each node belongs to two cliques
-#             clique_size = 4
-#             k1 = k * np.ones(n)
-#             num_cliques = round(sum(k1) / clique_size)
-#             k2 = clique_size * np.ones(num_cliques)
-#             A = clustered_network(k1, k2, seed=0)
-#             e = [(i, j) for i, j in nx.Graph(A).edges]
-
-
-#df.to_csv('../../data/condition_number_vs_mean_degree.csv')
-#df = pd.read_csv('../data/condition_number_vs_mean_degree.csv')
 # Choose a colormap
 cmap = plt.get_cmap('copper')  # You can replace 'viridis' with any other continuous colormap
 # Extract the first color
 first_color = cmap(10)  # 0 corresponds to the start of the colormap
 first_color = 'blue'
-lw = 1.5
+lw =0.7 
 
 #graph config options 
 edge_options = {
@@ -78,9 +74,6 @@ node_options = {
         'linewidths' : 0.5
 }
 
-
-
-
 gs = GridSpec(3, 2, wspace=0.2, hspace=0.2,height_ratios = [1,1,1])
 fig = plt.figure(figsize=(15, 15))
 plt.subplots_adjust(left=0.12, right=0.84, bottom=0.1, top=0.95, wspace=0.4, hspace=0.4)
@@ -92,10 +85,8 @@ p = 0.5
 n = 80
 num_nodes =200
 
-
 G = make_config_model(er_degree_sequence,p = p,n = n,num_nodes = num_nodes)
 plot_graph(G,node_options,edge_options,ax_g1)
-
 
 ax_g2 = fig.add_subplot(gs[0,1])
 ax_g2.set_title('Power-law CM',fontsize = 24)
@@ -106,10 +97,12 @@ N_max = 100
 G = make_config_model(powerlaw_degree_sequence,alpha = alpha,N_max = N_max,num_nodes = num_nodes)
 plot_graph(G,node_options,edge_options,ax_g2)
 
-
 ax1 = fig.add_subplot(gs[1,0])
 
 sns.lineplot(data = df,x = 'T',y = 'outbreak_size',hue = 'lmbd',ax = ax1,color = first_color,palette = 'copper')
+# Add vertical lines for Poisson critical transitions
+for lmbd, crit in zip(df['lmbd'].unique(), poisson_critical_transition.unique()):
+        ax1.axvline(x=crit, color='gray', linestyle=':', alpha=0.5)
 
 ax1.set(ylabel = 'Outbreak Size',
         xlabel = 'Transmission Probability(T)',
@@ -117,17 +110,22 @@ ax1.set(ylabel = 'Outbreak Size',
         )
 ax1.legend_.remove()
 
-
 ax2 = fig.add_subplot(gs[2,0])
 
 sns.lineplot(data = df,x = 'T',y = 'sce',hue = 'lmbd',ax = ax2,color = first_color,palette = 'copper',lw = lw)
+# Add vertical lines for Poisson critical transitions
+for lmbd, crit in zip(df['lmbd'].unique(), poisson_critical_transition.unique()):
+        ax2.axvline(x=crit, color='gray', linestyle=':', alpha=0.5)
+
 ax2.set(ylabel = 'Condition Number',xlabel = 'Transmission Probability(T)',title = 'Poisson Condition Number vs. Transmission Probability(T)')
 
 ax2.legend_.remove()
 
-
 ax3 = fig.add_subplot(gs[1,1])
 sns.lineplot(data = df_pl,x = 'T',y = 'outbreak_size',hue = 'lmbd',ax = ax3,color = first_color,palette = 'copper')
+# Add vertical lines for Power Law critical transitions
+for alpha, crit in zip(df_pl['lmbd'].unique(), powerlaw_critical_transition.unique()):
+        ax3.axvline(x=crit, color='gray', linestyle=':', alpha=0.5)
 
 ax3.set(ylabel = 'Outbreak Size',
         xlabel = 'Transmission Probability(T)',
@@ -139,6 +137,17 @@ ax3.legend_.remove()
 
 ax4 = fig.add_subplot(gs[2,1])
 sns.lineplot(data = df_pl,x = 'T',y = 'sce',hue = 'lmbd',ax = ax4,color = first_color,palette = 'copper',lw = lw)
+# Add vertical lines for Power Law critical transitions
+for alpha, crit in zip(df_pl['lmbd'].unique(), powerlaw_critical_transition.unique()):
+        ax4.axvline(x=crit, color='gray', linestyle=':', alpha=0.5)
+
+ax4.set(ylabel = 'Condition Number',xlabel = 'Transmission Probability(T)',title = ' Power Law Condition Number vs. Transmission Probability(T)')
+#ax4.legend_.remove()
+#ax4.legend(title = r'$\alpha$')
+
+#add a colorbar for ER
+ax4.axvline(x=crit, color='gray', linestyle=':', alpha=0.5)
+
 ax4.set(ylabel = 'Condition Number',xlabel = 'Transmission Probability(T)',title = ' Power Law Condition Number vs. Transmission Probability(T)')
 ax4.legend_.remove()
 #ax4.legend(title = r'$\alpha$')
@@ -168,5 +177,6 @@ cbar3.set_label(r'$\alpha$')
 cbar4.set_label(r'$\alpha$')
 
 plt.show()
+#plt.savefig("figures/condition_number_vs_mean_degree_er_powerlaw_addative.png")
 #plt.savefig("figures/condition_number_vs_mean_degree_er_powerlaw_addative.pdf")
 
