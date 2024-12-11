@@ -314,6 +314,79 @@ def get_outbreak_size(my_degree_sequence,T):
     outbreak_size = 1-u2 
     return outbreak_size
 
+def aitken_accelerate(x_values):
+    """
+    Apply Aitken’s Δ²-acceleration to a sequence of scalar iterates.
+    
+    Parameters:
+    x_values (array-like): The input sequence of approximations [x_0, x_1, x_2, ...].
+    
+    Returns:
+    numpy.ndarray: The accelerated sequence [y_0, y_1, ...].
+    
+    Note:
+    - You need at least three terms to produce one accelerated estimate.
+    - If Δ²x_n = 0, the method cannot improve that particular triple, and we default to x_n itself.
+    """
+    x_values = np.asarray(x_values, dtype=float)
+    n = len(x_values)
+    if n < 3:
+        # Not enough points for Aitken acceleration
+        return x_values.copy()
+    
+    y_values = []
+    for i in range(n - 2):
+        x_n = x_values[i]
+        x_n1 = x_values[i + 1]
+        x_n2 = x_values[i + 2]
+        
+        delta_x_n = x_n1 - x_n
+        delta_x_n1 = x_n2 - x_n1
+        delta2_x_n = delta_x_n1 - delta_x_n
+        
+        if delta2_x_n != 0:
+            y_n = x_n - (delta_x_n**2) / delta2_x_n
+        else:
+            # If no improvement possible, just take the last value as a fallback
+            y_n = x_n2  
+            y_n = x_n2  
+        y_values.append(y_n)
+    
+    return np.array(y_values)
+
+def iterate_until_convergence_with_aitken(pk, T=1, tol=1e-5, usol=0.5, max_iter=int(1e4)):
+    """
+    Example usage of Aitken's method within your iteration.
+    This function:
+    1. Iterates the fixed-point iteration: u_{n+1} = G1(u_n).
+    2. Periodically applies Aitken acceleration to speed convergence.
+    """
+    u_values = []
+    u1 = np.float64(usol)
+    u2 = G1(u1, pk, T)
+    u_values.append(u2)
+    
+    for i in range(max_iter):
+        if abs(u2 - u1) < tol:
+            break
+        
+        u1 = u2
+        u2 = G1(u1, pk, T)
+        
+        u_values.append(u2)
+        
+        # Every 10 iterations (for example), apply Aitken’s Δ² to accelerate
+        if i > 2 and i % 10 == 0:
+            # Apply Aitken acceleration to the sequence so far
+            accelerated = aitken_accelerate(u_values)
+            # Replace the original sequence with the accelerated one
+            u_values = accelerated.tolist()
+            # Update the current guess to the last accelerated value
+            u2 = u_values[-1]
+    
+    return u1, u2
+ 
+
 
 @jit(nopython=True)
 def iterate_until_convergence(pk, T=1, tol=1e-5, usol=0.5, max_iter=int(1e4)):
@@ -376,11 +449,11 @@ def l_x_algo(
     # Root solving and error
     #get machine precision 
     #print("Finding unperturbed root...")
-    og_roots, _ = iterate_until_convergence(my_poly_coef, T=T, tol=tol, max_iter=max_iter)
+    og_roots, _ = iterate_until_convergence_with_aitken(my_poly_coef, T=T, tol=tol, max_iter=max_iter)
     
     for i in range(K):
         if i % 10000 == 0:
-            logging.debug(f"Processing perturbation {i}/{K}")
+            logging.info(f"Processing perturbation {i}/{K}")
             
         # Don't recompute unperturbed root
         delta = 2**(-16)
@@ -396,6 +469,17 @@ def l_x_algo(
             max_iter=max_iter,
             usol=og_roots  # Use previous solution as initial guess
         )
+        
+        
+        perturbed_roots, _ = iterate_until_convergence_with_aitken(
+            my_perturbed_poly_coefs, 
+            T=T, 
+            tol=tol, 
+            max_iter=max_iter,
+            usol=og_roots  # Use previous solution as initial guess
+        )
+        
+        
         
         # Only append if convergence achieved
         if perturbed_roots is not None:

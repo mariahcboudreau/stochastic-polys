@@ -20,7 +20,7 @@ date = datetime.today().strftime('%m-%d-%Y')
 from multiprocessing import Pool
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
         
 def calculate_critical_transition(my_degree_sequence):
     pk = np.vstack((np.arange(0, my_degree_sequence.shape[0], 1), my_degree_sequence)).T
@@ -39,14 +39,19 @@ def process_data(lmbd, T,degree_sequence_func,lx_func):
 
 
 N_max = 100  # Maximum value for N in the distribution
-my_K = int(1e10)#number of samples per SCE estimte
+my_K = int(1e5)#number of samples per SCE estimte
 max_iter = int(1e5)
 tol = 1e-10
 
 #params to sweep over
-T_vals = np.linspace(0.001,1,60)
-alpha_vals = np.linspace(3.1,4,10)
-lmbd_vals = np.linspace(0.001,2,10)
+# T_vals = np.linspace(0.001,1,60)
+# alpha_vals = np.linspace(3.1,4,10)
+# lmbd_vals = np.linspace(0.001,2,10)
+
+T_vals = np.linspace(0.001, 1, 30)
+alpha_vals = [3.0]
+lmbd_vals = [2.0]
+
 
 #create partial function for the condition number heatmap for addative and multiplicative noise
 lx_addative = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='additive',max_iter = max_iter,tol = tol)
