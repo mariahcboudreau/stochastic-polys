@@ -20,7 +20,7 @@ date = datetime.today().strftime('%m-%d-%Y')
 from multiprocessing import Pool
 import logging
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
         
 def calculate_critical_transition(my_degree_sequence):
     pk = np.vstack((np.arange(0, my_degree_sequence.shape[0], 1), my_degree_sequence)).T
@@ -39,9 +39,9 @@ def process_data(lmbd, T,degree_sequence_func,lx_func):
 
 
 N_max = 100  # Maximum value for N in the distribution
-my_K = int(1e4)#number of samples per SCE estimte
+my_K = int(1e10)#number of samples per SCE estimte
 max_iter = int(1e5)
-tol = 1e-5
+tol = 1e-10
 
 #params to sweep over
 T_vals = np.linspace(0.001,1,60)
