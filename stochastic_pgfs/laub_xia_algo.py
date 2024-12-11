@@ -324,8 +324,8 @@ def iterate_until_convergence(pk, T=1, tol=1e-5, usol=0.5, max_iter=int(1e4)):
             break
         u1 = u2
         u2 = G1(u1, pk, T)
-    if i == max_iter - 1:
-        print("Did not converge")
+    # if i == max_iter - 1:
+    #     print("Did not converge")
     return u1, u2
 
 
@@ -379,7 +379,7 @@ def l_x_algo(
     og_roots, _ = iterate_until_convergence(my_poly_coef, T=T, tol=tol, max_iter=max_iter)
     
     for i in range(K):
-        if i % 1000 == 0:
+        if i % 10000 == 0:
             logging.debug(f"Processing perturbation {i}/{K}")
             
         # Don't recompute unperturbed root
