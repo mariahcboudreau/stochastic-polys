@@ -44,13 +44,13 @@ max_iter = int(1e5)
 tol = 1e-10
 
 #params to sweep over
-# T_vals = np.linspace(0.001,1,60)
-# alpha_vals = np.linspace(3.1,4,10)
-# lmbd_vals = np.linspace(0.001,2,10)
+T_vals = np.linspace(0.001,1,60)
+alpha_vals = np.linspace(3.1,4,10)
+lmbd_vals = np.linspace(0.001,2,10)
 
-T_vals = np.linspace(0.001, 1, 30)
-alpha_vals = [3.0]
-lmbd_vals = [2.0]
+# T_vals = np.linspace(0.001, 1, 30)
+# alpha_vals = [3.0]
+# lmbd_vals = [2.0]
 
 
 #create partial function for the condition number heatmap for addative and multiplicative noise
@@ -68,30 +68,44 @@ noise_dict = {'addative': lx_addative}
 
 control_params_dict = {'poisson': lmbd_vals,'powerlaw': alpha_vals}
 
+def worker_task(control_param, T, dist_func, noise_func):
+    logging.info(f"Process {mp.current_process().pid} started task")
+    result = process_data(control_param, T, dist_func, noise_func)
+    return result
 
 if __name__ == '__main__':
-    for dist_name,dist_func in dist_dict.items(): 
+    data_dict_list = []
+
+    for dist_name, dist_func in dist_dict.items():
         print(dist_name)
-        for noise_name,noise_func in noise_dict.items():
+        for noise_name, noise_func in noise_dict.items():
             print(noise_name)
             control_param_vals = control_params_dict[dist_name]
+            tasks = []
+
+            for control_param in control_param_vals:
+                # Add critical value to list of T values
+                my_dist = dist_func(control_param)
+                critical_value = calculate_critical_transition(my_dist)
+                # Generate T values using log spacing
+                T_vals_plus_crit = np.logspace(np.log10(critical_value), np.log10(critical_value + 0.1), 30)
+                logging.info(f"Control Param: {control_param}")
+
+                # Prepare tasks for each T value
+                for T in T_vals_plus_crit:
+                    tasks.append((control_param, T, dist_func, noise_func))
+
+            # Create the pool once
             with Pool() as pool:
-                results = []
-                for control_param in control_param_vals:
-                    #add critical value to lise of T values
-                    my_dist = dist_func(control_param)
-                    critical_value = calculate_critical_transition(my_dist)
-                    T_vals_plus_crit = np.logspace(critical_value,critical_value+0.1,30)
-                    logging.info(f"Control Param: {control_param}")
-                    for T in T_vals_plus_crit:
-                        results.append(pool.apply_async(process_data, (control_param, T,dist_func,noise_func)))
-                        
-                data_dict_list = [result.get() for result in results]
-                #save results
-                df = pd.DataFrame(data_dict_list)
-                df = df.explode(['lmbd','sce','outbreak_size'])
-                df.outbreak_size = df.outbreak_size.apply(lambda x: x.real)
-                df.to_csv(f"data/random_graphs/critical_scaling_log_sweep_{dist_name}_{noise_name}.csv")
+                # Map the worker_task over all tasks
+                results = pool.starmap(worker_task, tasks)
+
+            data_dict_list.extend(results)
+            # Save results
+            df = pd.DataFrame(data_dict_list)
+            df = df.explode(['lmbd', 'sce', 'outbreak_size'])
+            df.outbreak_size = df.outbreak_size.apply(lambda x: x.real)
+            df.to_csv(f"data/random_graphs/critical_scaling_log_sweep_{dist_name}_{noise_name}.csv")
 
 
 

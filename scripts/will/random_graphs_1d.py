@@ -1,4 +1,5 @@
 from multiprocessing import Pool
+import multiprocessing as mp
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -14,7 +15,7 @@ from stochastic_pgfs.random_graphs import poisson_degree_sequence, powerlaw_degr
 # Enable Numba logging
 #config.LOGNAME = "numba.jitclass"
 config.DEBUG = False
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 # Add a test function with Numba
 @jit(nopython=True)
@@ -38,14 +39,14 @@ def process_data(lmbd, T, degree_sequence_func, lx_func):
     return {'lmbd': lmbd, 'T': T, 'sce': lx_func(my_degree_sequence, T=T), 'outbreak_size': outbreak_size}
 
 N_max = 500#1000  # Maximum value for N in the distribution
-my_K = int(1e6)  # number of samples per SCE estimate
+my_K = int(1e4)  # number of samples per SCE estimate
 max_iter = int(1e10)
 tol = 1e-10
 
 # params to sweep over
-#T_vals = np.linspace(0.001, 1, 60)
-# alpha_vals = np.linspace(1.8, 4, 30)
-# lmbd_vals = np.linspace(0.001, 2, 30)
+# T_vals = np.linspace(0.001, 1, 60)
+# alpha_vals = np.linspace(1.8, 4, 15)
+# lmbd_vals = np.linspace(1.0, 2, 15)
 
 T_vals = np.linspace(0.001, 1, 30)
 alpha_vals = [3.0]
@@ -61,11 +62,10 @@ dist_dict = {'poisson': poisson_degree_sequence_partial, 'powerlaw': powerlaw_de
 noise_dict = {'additive': lx_additive}
 control_params_dict = {'poisson': lmbd_vals, 'powerlaw': alpha_vals}
 
-def worker_task(control_param, T_vals_plus_crit, dist_func, noise_func):
-    results = []
-    for T in T_vals_plus_crit:
-        results.append(process_data(control_param, T, dist_func, noise_func))
-    return results
+def worker_task(control_param, T, dist_func, noise_func):
+    logging.info(f"Process {mp.current_process().pid} started task")
+    result = process_data(control_param, T, dist_func, noise_func)
+    return result
 
 if __name__ == '__main__':
     print("Testing Numba compilation...")
@@ -80,7 +80,7 @@ if __name__ == '__main__':
     for dist_name, dist_func in dist_dict.items():
         for noise_name, noise_func in noise_dict.items():
             control_param_vals = control_params_dict[dist_name]
-            results = []
+            tasks = []
 
             for control_param in control_param_vals:
                 my_dist = dist_func(control_param)
@@ -90,15 +90,20 @@ if __name__ == '__main__':
                 T_vals_plus_crit = T_vals_plus_crit[(T_vals_plus_crit > 0) & (T_vals_plus_crit < 1)]
                 logging.info(f"Control Param: {control_param}, T_vals_plus_crit: {T_vals_plus_crit}")
 
-                with Pool() as pool:
-                    results.extend(pool.apply_async(worker_task, (control_param, T_vals_plus_crit, dist_func, noise_func)).get())
+                # Prepare tasks for each T value
+                for T in T_vals_plus_crit:
+                    tasks.append((control_param, T, dist_func, noise_func))
 
+            # Create the pool once
+            with Pool() as pool:
+                # Map the worker_task over all tasks
+                results = pool.starmap(worker_task, tasks)
             data_dict_list.extend(results)
 
-            df = pd.DataFrame(data_dict_list)
-            df = df.explode(['lmbd', 'sce', 'outbreak_size'])
-            df.outbreak_size = df.outbreak_size.apply(lambda x: x.real)
-            df.to_csv(f"data/random_graphs/random_graphs_sweep_{dist_name}_{noise_name}.csv")
+    df = pd.DataFrame(data_dict_list)
+    df = df.explode(['lmbd', 'sce', 'outbreak_size'])
+    df.outbreak_size = df.outbreak_size.apply(lambda x: x.real)
+    df.to_csv(f"data/random_graphs/random_graphs_sweep_{dist_name}_{noise_name}.csv")
 
 
 
