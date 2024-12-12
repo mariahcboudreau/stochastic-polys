@@ -89,7 +89,7 @@ if __name__ == '__main__':
                 my_dist = dist_func(control_param)
                 critical_value = calculate_critical_transition(my_dist)
                 # Generate T values using log spacing
-                T_vals_plus_crit = np.logspace(np.log10(critical_value), np.log10(critical_value + 0.01), 30)
+                T_vals_plus_crit = np.logspace(np.log10(critical_value), np.log10(critical_value + 1e-4), 30)
                 logging.info(f"Control Param: {control_param}")
 
                 # Prepare tasks for each T value
