@@ -25,7 +25,15 @@ df = pd.read_csv("data/random_graphs/random_graphs_sweep_poisson_additive.csv")
 df_pl = pd.read_csv("data/random_graphs/random_graphs_sweep_powerlaw_additive.csv")
 df_pl = df_pl.query('lmbd > 2.0')
 
-N_max = 100
+df.query('lmbd > 1.0',inplace = True)
+# cut_lmbd =[v for i,v in enumerate(df.lmbd.unique()) if i % 2 == 0]
+# df.query('lmbd in @cut_lmbd',inplace = True)
+
+
+
+
+
+N_max = 500
 
 def calculate_critical_transition(my_degree_sequence):
     pk = np.vstack((np.arange(0, my_degree_sequence.shape[0], 1), my_degree_sequence)).T
@@ -50,6 +58,17 @@ poisson_critical_transition = pd.Series([poisson_critical_transition(gamma) for 
 powerlaw_critical_transition = pd.Series(np.where(powerlaw_critical_transition > 1, 1, powerlaw_critical_transition))
 poisson_critical_transition = pd.Series(np.where(poisson_critical_transition > 1, 1, poisson_critical_transition))
 
+
+
+df_critical_transitions = pd.DataFrame({
+        'gamma': powerlaw_params,
+        'critical_transition': powerlaw_critical_transition
+})
+
+empirical_transitions = df_pl.query('outbreak_size > 1e-5').groupby('lmbd').min().drop(columns = ['Unnamed: 0'])
+df_critical_transitions.merge(empirical_transitions, left_on = 'gamma',right_on = 'lmbd')
+
+
 # Only root process creates the visualization
 mpl.rcParams.update(mpl.rcParamsDefault)
 plt.rcParams["font.family"] = "Times New Roman"
@@ -73,6 +92,19 @@ node_options = {
         'node_color': 'white',
         'linewidths' : 0.5
 }
+
+# Compute colors using unique 'lmbd' values
+er_lmbd_unique = df['lmbd'].unique()
+norm_er = mpl.colors.Normalize(vmin=er_lmbd_unique.min(), vmax=er_lmbd_unique.max())
+sm_er = plt.cm.ScalarMappable(cmap='copper', norm=norm_er)
+sm_er.set_array([])
+er_colors = sm_er.to_rgba(er_lmbd_unique)
+
+pl_lmbd_unique = df_pl['lmbd'].unique()
+norm_pl = mpl.colors.Normalize(vmin=pl_lmbd_unique.min(), vmax=pl_lmbd_unique.max())
+sm_pl = plt.cm.ScalarMappable(cmap='copper', norm=norm_pl)
+sm_pl.set_array([])
+pl_colors = sm_pl.to_rgba(pl_lmbd_unique)
 
 gs = GridSpec(3, 2, wspace=0.2, hspace=0.2,height_ratios = [1,1,1])
 fig = plt.figure(figsize=(15, 15))
@@ -101,8 +133,8 @@ ax1 = fig.add_subplot(gs[1,0])
 
 sns.lineplot(data = df,x = 'T',y = 'outbreak_size',hue = 'lmbd',ax = ax1,color = first_color,palette = 'copper')
 # Add vertical lines for Poisson critical transitions
-for lmbd, crit in zip(df['lmbd'].unique(), poisson_critical_transition.unique()):
-        ax1.axvline(x=crit, color='gray', linestyle=':', alpha=0.5)
+for i,(lmbd, crit) in enumerate(zip(er_lmbd_unique, poisson_critical_transition.unique())):
+        ax1.axvline(x=crit, color=er_colors[i], linestyle='--', alpha=0.8,lw = 1.5)
 
 ax1.set(ylabel = 'Outbreak Size',
         xlabel = 'Transmission Probability(T)',
@@ -114,8 +146,8 @@ ax2 = fig.add_subplot(gs[2,0])
 
 sns.lineplot(data = df,x = 'T',y = 'sce',hue = 'lmbd',ax = ax2,color = first_color,palette = 'copper',lw = lw)
 # Add vertical lines for Poisson critical transitions
-for lmbd, crit in zip(df['lmbd'].unique(), poisson_critical_transition.unique()):
-        ax2.axvline(x=crit, color='gray', linestyle=':', alpha=0.5)
+for i, (lmbd, crit) in enumerate(zip(er_lmbd_unique, poisson_critical_transition.unique())):
+    ax2.axvline(x=crit, color=er_colors[i], linestyle='--', alpha=0.8, lw=1.5)
 
 ax2.set(ylabel = 'Condition Number',xlabel = 'Transmission Probability(T)',title = 'Poisson Condition Number vs. Transmission Probability(T)')
 
@@ -124,22 +156,20 @@ ax2.legend_.remove()
 ax3 = fig.add_subplot(gs[1,1])
 sns.lineplot(data = df_pl,x = 'T',y = 'outbreak_size',hue = 'lmbd',ax = ax3,color = first_color,palette = 'copper')
 # Add vertical lines for Power Law critical transitions
-for alpha, crit in zip(df_pl['lmbd'].unique(), powerlaw_critical_transition.unique()):
-        ax3.axvline(x=crit, color='gray', linestyle=':', alpha=0.5)
+for i, (alpha, crit) in enumerate(zip(pl_lmbd_unique, powerlaw_critical_transition.unique())):
+    ax3.axvline(x=crit, color=pl_colors[i], linestyle='--', alpha=0.8, lw=1.5)
 
 ax3.set(ylabel = 'Outbreak Size',
         xlabel = 'Transmission Probability(T)',
         title = 'Power Law Outbreak Size vs. Transmission Probability'
         )
-
 ax3.legend_.remove()
-#ax3.legend(title = r'$\alpha$')
 
 ax4 = fig.add_subplot(gs[2,1])
 sns.lineplot(data = df_pl,x = 'T',y = 'sce',hue = 'lmbd',ax = ax4,color = first_color,palette = 'copper',lw = lw)
 # Add vertical lines for Power Law critical transitions
-for alpha, crit in zip(df_pl['lmbd'].unique(), powerlaw_critical_transition.unique()):
-        ax4.axvline(x=crit, color='gray', linestyle=':', alpha=0.5)
+for crit, color in zip(powerlaw_critical_transition.unique(), pl_colors):
+    ax4.axvline(x=crit, color=color, linestyle='--', alpha=0.8, lw=1.5)
 
 ax4.set(ylabel = 'Condition Number',xlabel = 'Transmission Probability(T)',title = ' Power Law Condition Number vs. Transmission Probability(T)')
 #ax4.legend_.remove()
@@ -152,14 +182,6 @@ ax4.set(ylabel = 'Condition Number',xlabel = 'Transmission Probability(T)',title
 ax4.legend_.remove()
 #ax4.legend(title = r'$\alpha$')
 
-#add a colorbar for ER
-norm = mpl.colors.Normalize(vmin = df['lmbd'].min(),vmax = df['lmbd'].max())
-sm_er = plt.cm.ScalarMappable(cmap = 'copper',norm =norm)
-sm_er.set_array([])
-#add colorbar for PL
-norm = mpl.colors.Normalize(vmin = df_pl['lmbd'].min(),vmax = df_pl['lmbd'].max())
-sm_pl = plt.cm.ScalarMappable(cmap = 'copper',norm =norm)
-sm_pl.set_array([])
 
 
 cbar_frac = 0.09
@@ -180,3 +202,5 @@ plt.show()
 #plt.savefig("figures/condition_number_vs_mean_degree_er_powerlaw_addative.png")
 #plt.savefig("figures/condition_number_vs_mean_degree_er_powerlaw_addative.pdf")
 
+sns.relplot(data = df_pl,x = 'T',y = 'outbreak_size',hue = 'lmbd',kind = 'line',palette = 'copper')
+plt.show()
