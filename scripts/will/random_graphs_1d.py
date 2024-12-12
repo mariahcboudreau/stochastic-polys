@@ -34,23 +34,26 @@ def calculate_critical_transition(my_degree_sequence):
     return 1 / G1_prime(1, pk, 1)
 
 def process_data(lmbd, T, degree_sequence_func, lx_func):
+    logging.info(f"T: {T}")
+    logging.info(f"lmbd: {lmbd}")
     my_degree_sequence = degree_sequence_func(lmbd)
     outbreak_size = get_outbreak_size(my_degree_sequence, T)
     return {'lmbd': lmbd, 'T': T, 'sce': lx_func(my_degree_sequence, T=T), 'outbreak_size': outbreak_size}
 
-N_max = 500#1000  # Maximum value for N in the distribution
-my_K = int(1e4)  # number of samples per SCE estimate
+N_max = 1000  # Maximum value for N in the distribution
+my_K = int(1e6)  # number of samples per SCE estimate
 max_iter = int(1e10)
 tol = 1e-10
 
-# params to sweep over
-# T_vals = np.linspace(0.001, 1, 60)
-# alpha_vals = np.linspace(1.8, 4, 15)
-# lmbd_vals = np.linspace(1.0, 2, 15)
 
-T_vals = np.linspace(0.001, 1, 30)
-alpha_vals = [3.0]
-lmbd_vals = [2.0]
+# params to sweep over
+T_vals = np.linspace(0.001, 1, 40)
+alpha_vals = np.linspace(2.1, 3.4, 30)
+lmbd_vals = np.linspace(1.0, 2, 30)
+
+# T_vals = np.linspace(0.001, 1, 90)
+# alpha_vals = [2.11]
+# lmbd_vals = [2.0]
 
 lx_additive = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds], is_pgf=True, perturbation_type='additive', max_iter=max_iter,tol = tol)
 lx_multiplicative = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds], is_pgf=True, perturbation_type='multiplicative', max_iter=max_iter,tol = tol)
@@ -68,12 +71,6 @@ def worker_task(control_param, T, dist_func, noise_func):
     return result
 
 if __name__ == '__main__':
-    print("Testing Numba compilation...")
-    # First call compiles the function
-    result1 = test_numba()
-    # Second call uses compiled version
-    result2 = test_numba()
-    print("Numba test complete")
     
     data_dict_list = []
 
@@ -85,6 +82,8 @@ if __name__ == '__main__':
             for control_param in control_param_vals:
                 my_dist = dist_func(control_param)
                 critical_value = calculate_critical_transition(my_dist)
+                print("Control Param: ", control_param)
+                print(f"Critical Value: {critical_value}")
                 T_vals_plus_crit = np.concatenate([T_vals, np.array([critical_value])])
                 T_vals_plus_crit = np.sort(T_vals_plus_crit)
                 T_vals_plus_crit = T_vals_plus_crit[(T_vals_plus_crit > 0) & (T_vals_plus_crit < 1)]
@@ -100,10 +99,10 @@ if __name__ == '__main__':
                 results = pool.starmap(worker_task, tasks)
             data_dict_list.extend(results)
 
-    df = pd.DataFrame(data_dict_list)
-    df = df.explode(['lmbd', 'sce', 'outbreak_size'])
-    df.outbreak_size = df.outbreak_size.apply(lambda x: x.real)
-    df.to_csv(f"data/random_graphs/random_graphs_sweep_{dist_name}_{noise_name}.csv")
+            df = pd.DataFrame(data_dict_list)
+            df = df.explode(['lmbd', 'sce', 'outbreak_size'])
+            df.outbreak_size = df.outbreak_size.apply(lambda x: x.real)
+            df.to_csv(f"data/random_graphs/random_graphs_sweep_{dist_name}_{noise_name}.csv")
 
 
 

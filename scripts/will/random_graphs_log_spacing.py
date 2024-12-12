@@ -18,6 +18,7 @@ import copy
 date = datetime.today().strftime('%m-%d-%Y')
 
 from multiprocessing import Pool
+import multiprocessing as mp
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -28,8 +29,8 @@ def calculate_critical_transition(my_degree_sequence):
         
         
 def process_data(lmbd, T,degree_sequence_func,lx_func):
-    print("T: ",T)
-    print("lmbd: ",lmbd)
+    logging.info(f"T {T}")
+    logging.info(f"lmbd: {lmbd}")
     sce_list = []
     outbreak_size_list = []
     my_degree_sequence = degree_sequence_func(lmbd)
@@ -39,11 +40,11 @@ def process_data(lmbd, T,degree_sequence_func,lx_func):
 
 
 N_max = 100  # Maximum value for N in the distribution
-my_K = int(1e5)#number of samples per SCE estimte
+my_K = int(1e6)#number of samples per SCE estimte
 max_iter = int(1e5)
 tol = 1e-10
 
-#params to sweep over
+# #params to sweep over
 T_vals = np.linspace(0.001,1,60)
 alpha_vals = np.linspace(3.1,4,10)
 lmbd_vals = np.linspace(0.001,2,10)
@@ -88,7 +89,7 @@ if __name__ == '__main__':
                 my_dist = dist_func(control_param)
                 critical_value = calculate_critical_transition(my_dist)
                 # Generate T values using log spacing
-                T_vals_plus_crit = np.logspace(np.log10(critical_value), np.log10(critical_value + 0.1), 30)
+                T_vals_plus_crit = np.logspace(np.log10(critical_value), np.log10(critical_value + 0.01), 30)
                 logging.info(f"Control Param: {control_param}")
 
                 # Prepare tasks for each T value
