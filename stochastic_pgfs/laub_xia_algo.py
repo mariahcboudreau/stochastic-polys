@@ -305,12 +305,14 @@ def G1(x, pk, T):
 def G1_prime(x, pk, T):
     x = (1 - T) + T * x
     numerator = (pk[:, 0] - 1) * pk[:, 0] * pk[:, 1] * np.power(x, pk[:, 0] - 2)
-    denominator = pk[:, 0].dot(pk[:, 1])
-    return numerator.sum() / denominator
+    #denominator = (pk[:, 0] - 1) * pk[:, 0] * pk[:, 1]
+    denominator =  pk[:, 0] * pk[:, 1]
+    return numerator.sum() / denominator.sum()
 
 def get_outbreak_size(my_degree_sequence,T):
     pk = np.vstack((np.arange(0, my_degree_sequence.shape[0], 1), my_degree_sequence)).T
-    u1,u2 =iterate_until_convergence(pk,T = T)
+    u1,u2 =iterate_until_convergence_with_aitken(pk,T = T, tol = 1e-5, max_iter = int(1e5))
+    #u1,u2 =iterate_until_convergence(pk,T = T)
     outbreak_size = 1-u2 
     return outbreak_size
 
@@ -450,6 +452,8 @@ def l_x_algo(
     #get machine precision 
     #print("Finding unperturbed root...")
     og_roots, _ = iterate_until_convergence_with_aitken(my_poly_coef, T=T, tol=tol, max_iter=max_iter)
+    #og_roots, _ = iterate_until_convergence(my_poly_coef, T=T, tol=tol, max_iter=max_iter)
+    
     
     for i in range(K):
         if i % 10000 == 0:
@@ -461,14 +465,14 @@ def l_x_algo(
         
         my_perturbed_poly_coefs = _perturb_polynomial(my_poly_coef, delta, alpha_i, perturbation_type)
         
-        # Use original root as initial guess for perturbed system
-        perturbed_roots, _ = iterate_until_convergence(
-            my_perturbed_poly_coefs, 
-            T=T, 
-            tol=tol, 
-            max_iter=max_iter,
-            usol=og_roots  # Use previous solution as initial guess
-        )
+        # # Use original root as initial guess for perturbed system
+        # perturbed_roots, _ = iterate_until_convergence(
+        #     my_perturbed_poly_coefs, 
+        #     T=T, 
+        #     tol=tol, 
+        #     max_iter=max_iter,
+        #     usol=og_roots  # Use previous solution as initial guess
+        # )
         
         
         perturbed_roots, _ = iterate_until_convergence_with_aitken(
