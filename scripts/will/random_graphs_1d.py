@@ -47,9 +47,9 @@ tol = 1e-10
 
 
 # params to sweep over
-T_vals = np.linspace(0.001, 1, 40)
-alpha_vals = np.linspace(2.1, 3.4, 30)
-lmbd_vals = np.linspace(1.0, 2, 30)
+T_vals = np.linspace(0.001, 1, 1)
+alpha_vals = np.linspace(2.1, 3.4, 1)
+lmbd_vals = np.linspace(1.0, 2, 1)
 
 # T_vals = np.linspace(0.001, 1, 90)
 # alpha_vals = [2.11]

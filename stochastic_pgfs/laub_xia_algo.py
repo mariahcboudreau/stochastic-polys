@@ -276,7 +276,9 @@ def _perturb_polynomial(poly_coefs, delta, alpha_i, perturbation_type):
     #     perturbed_coefs = poly_coefs * (1 * delta * alpha_i)
     else:
         raise ValueError("Perturbation type must be either additive or multiplicative")
-    
+   
+    #normalize the coefficients
+    perturbed_coefs[:,1] = perturbed_coefs[:,1]/sum(perturbed_coefs[:,1]) 
     return perturbed_coefs
 
 
@@ -452,7 +454,6 @@ def l_x_algo(
     #get machine precision 
     #print("Finding unperturbed root...")
     og_roots, _ = iterate_until_convergence_with_aitken(my_poly_coef, T=T, tol=tol, max_iter=max_iter)
-    #og_roots, _ = iterate_until_convergence(my_poly_coef, T=T, tol=tol, max_iter=max_iter)
     
     
     for i in range(K):
@@ -464,6 +465,8 @@ def l_x_algo(
         alpha_i = Z[:, i]
         
         my_perturbed_poly_coefs = _perturb_polynomial(my_poly_coef, delta, alpha_i, perturbation_type)
+        
+        print(sum(my_perturbed_poly_coefs[:,1]))
         
         # # Use original root as initial guess for perturbed system
         # perturbed_roots, _ = iterate_until_convergence(
