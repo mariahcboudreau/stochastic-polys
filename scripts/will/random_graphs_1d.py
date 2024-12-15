@@ -41,7 +41,7 @@ def process_data(lmbd, T, degree_sequence_func, lx_func):
     return {'lmbd': lmbd, 'T': T, 'sce': lx_func(my_degree_sequence, T=T), 'outbreak_size': outbreak_size}
 
 N_max = 1000  # Maximum value for N in the distribution
-my_K = int(1e5)  # number of samples per SCE estimate
+my_K = int(1e3)  # number of samples per SCE estimate
 max_iter = int(1e10)
 tol = 1e-10
 
