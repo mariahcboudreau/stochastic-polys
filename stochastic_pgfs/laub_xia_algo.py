@@ -394,7 +394,7 @@ def iterate_with_acceleration(pk, T=1, method='aitken', tol=1e-5, usol=0.5, max_
     """
     if method not in ['aitken', 'steffensen', 'naive']:
         raise ValueError("Method must be 'aitken', 'steffensen', or 'naive'")
-    
+   
     if method == 'naive':
         u1 = np.float64(usol)
         u2 = G1(u1, pk, T)
@@ -492,6 +492,7 @@ def l_x_algo(
 
     SCE_list = []
     Diff_list = []
+    
 
     # Get unperturbed root using specified acceleration method
     og_roots, _ = iterate_with_acceleration(
@@ -507,7 +508,7 @@ def l_x_algo(
             logging.info(f"Processing perturbation {i}/{K}")
             
         delta = 2**(-16)
-        alpha_i = Q[:, i]
+        alpha_i = Z[:,i]#Q[:, i]
         
         my_perturbed_poly_coefs = _perturb_polynomial(my_poly_coef, delta, alpha_i, perturbation_type)
         
@@ -521,12 +522,14 @@ def l_x_algo(
             usol=og_roots  # Use previous solution as initial guess
         )
         
+        
         # Only append if convergence achieved
         if perturbed_roots is not None:
             SCE_list.append(np.abs(perturbed_roots - og_roots) / delta * np.abs(og_roots))
             Diff_list.append(perturbed_roots - og_roots)
 
     normed_sce = np.linalg.norm(SCE_list, axis=0)
+    breakpoint()
 
     if bifurcation:
         return Diff_list
