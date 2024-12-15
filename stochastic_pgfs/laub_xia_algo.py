@@ -311,31 +311,34 @@ def G1_prime(x, pk, T):
     denominator =  pk[:, 0] * pk[:, 1]
     return numerator.sum() / denominator.sum()
 
-def get_outbreak_size(my_degree_sequence,T):
+def get_outbreak_size(my_degree_sequence, T, method='steffensen'):
+    """
+    Calculate outbreak size using specified acceleration method
+    
+    Args:
+        my_degree_sequence: Degree sequence
+        T: Transmission rate
+        method: Acceleration method ('steffensen', 'aitken', or 'naive')
+        
+    Returns:
+        float: Outbreak size (1-u2)
+    """
     pk = np.vstack((np.arange(0, my_degree_sequence.shape[0], 1), my_degree_sequence)).T
-    u1,u2 =iterate_until_convergence_with_aitken(pk,T = T, tol = 1e-5, max_iter = int(1e5))
-    #u1,u2 =iterate_until_convergence(pk,T = T)
-    outbreak_size = 1-u2 
+    u1, u2 = iterate_with_acceleration(
+        pk,
+        T=T, 
+        method=method,
+        tol=1e-5, 
+        max_iter=int(1e5)
+    )
+    outbreak_size = 1 - u2
     return outbreak_size
 
 def aitken_accelerate(x_values):
-    """
-    Apply Aitken’s Δ²-acceleration to a sequence of scalar iterates.
-    
-    Parameters:
-    x_values (array-like): The input sequence of approximations [x_0, x_1, x_2, ...].
-    
-    Returns:
-    numpy.ndarray: The accelerated sequence [y_0, y_1, ...].
-    
-    Note:
-    - You need at least three terms to produce one accelerated estimate.
-    - If Δ²x_n = 0, the method cannot improve that particular triple, and we default to x_n itself.
-    """
+    """Post-processes a sequence using Aitken's method"""
     x_values = np.asarray(x_values, dtype=float)
     n = len(x_values)
     if n < 3:
-        # Not enough points for Aitken acceleration
         return x_values.copy()
     
     y_values = []
@@ -351,60 +354,95 @@ def aitken_accelerate(x_values):
         if delta2_x_n != 0:
             y_n = x_n - (delta_x_n**2) / delta2_x_n
         else:
-            # If no improvement possible, just take the last value as a fallback
-            y_n = x_n2  
-            y_n = x_n2  
+            y_n = x_n2
         y_values.append(y_n)
     
     return np.array(y_values)
 
-def iterate_until_convergence_with_aitken(pk, T=1, tol=1e-5, usol=0.5, max_iter=int(1e4)):
-    """
-    Example usage of Aitken's method within your iteration.
-    This function:
-    1. Iterates the fixed-point iteration: u_{n+1} = G1(u_n).
-    2. Periodically applies Aitken acceleration to speed convergence.
-    """
-    u_values = []
-    u1 = np.float64(usol)
-    u2 = G1(u1, pk, T)
-    u_values.append(u2)
-    
+# Steffensen's method implementation
+def steffensen_iterate(f, x0, tol=1e-5, max_iter=100):
+    """Generates sequence using Steffensen's method directly"""
+    x = x0
     for i in range(max_iter):
-        if abs(u2 - u1) < tol:
-            break
+        p0 = x
+        p1 = f(p0)
+        p2 = f(p1)
         
-        u1 = u2
+        denominator = p2 - 2*p1 + p0
+        if abs(denominator) < tol:
+            return x
+            
+        x = p0 - (p1 - p0)**2 / denominator
+        
+        if abs(x - p0) < tol:
+            return x
+            
+    return x
+
+def iterate_with_acceleration(pk, T=1, method='aitken', tol=1e-5, usol=0.5, max_iter=int(1e4), acceleration_interval=10):
+    """
+    Iterate with choice of acceleration method.
+    
+    Parameters:
+        pk: Probability kernel
+        T: Temperature parameter
+        method: 'aitken', 'steffensen', or 'naive'
+        tol: Convergence tolerance
+        usol: Initial guess
+        max_iter: Maximum iterations
+        acceleration_interval: How often to apply acceleration (for Aitken)
+    """
+    if method not in ['aitken', 'steffensen', 'naive']:
+        raise ValueError("Method must be 'aitken', 'steffensen', or 'naive'")
+    
+    if method == 'naive':
+        u1 = np.float64(usol)
         u2 = G1(u1, pk, T)
-        
+        for i in range(max_iter):
+            if abs(u2 - u1) < tol:
+                break
+            u1 = u2
+            u2 = G1(u1, pk, T)
+    
+    elif method == 'aitken':
+        u_values = []
+        u1 = np.float64(usol)
+        u2 = G1(u1, pk, T)
         u_values.append(u2)
         
-        # Every 10 iterations (for example), apply Aitken’s Δ² to accelerate
-        if i > 2 and i % 10 == 0:
-            # Apply Aitken acceleration to the sequence so far
-            accelerated = aitken_accelerate(u_values)
-            # Replace the original sequence with the accelerated one
-            u_values = accelerated.tolist()
-            # Update the current guess to the last accelerated value
-            u2 = u_values[-1]
-    
+        for i in range(max_iter):
+            if abs(u2 - u1) < tol:
+                break
+            
+            u1 = u2
+            u2 = G1(u1, pk, T)
+            u_values.append(u2)
+            
+            if i > 2 and i % acceleration_interval == 0:
+                accelerated = aitken_accelerate(u_values)
+                u_values = accelerated.tolist()
+                u2 = u_values[-1]
+                
+    else:  # Steffensen's method
+        u1 = np.float64(usol)
+        for i in range(max_iter):
+            p0 = u1
+            p1 = G1(p0, pk, T)
+            p2 = G1(p1, pk, T)
+            
+            denominator = p2 - 2*p1 + p0
+            if abs(denominator) < tol:
+                u2 = p0
+                break
+                
+            u2 = p0 - (p1 - p0)**2 / denominator
+            
+            if abs(u2 - u1) < tol:
+                break
+                
+            u1 = u2
+            
     return u1, u2
- 
-
-
-@jit(nopython=True)
-def iterate_until_convergence(pk, T=1, tol=1e-5, usol=0.5, max_iter=int(1e4)):
-    u1 = np.float64(usol)
-    u2 = G1(u1, pk, T)
-    for i in range(max_iter):
-        if abs(u2 - u1) < tol:
-            break
-        u1 = u2
-        u2 = G1(u1, pk, T)
-    # if i == max_iter - 1:
-    #     print("Did not converge")
-    return u1, u2
-
 
 def l_x_algo(
     my_poly_coef,
@@ -412,95 +450,88 @@ def l_x_algo(
     K=1000,
     conditions=None,
     delta=0.001,
-    T = 1.0,
+    T=1.0,
     perturbation_type="additive",
     bifurcation=False,
-    derivative_test = True,
+    derivative_test=True,
     max_iter=int(1e5),
-    tol=1e-5
+    tol=1e-5,
+    acceleration_method='steffensen'  # Add this parameter
 ):
     """
-    Calculate the stability measure using the Laub-Xia algorithm as outlined in DOI: 10.1137/070702242
-
+    Calculate the stability measure using the Laub-Xia algorithm
+    
     Args:
         my_poly_coef (array-like): Coefficients of the polynomial.
-        is_pgf (bool, optional): Whether the polynomial is a probability generating function. Defaults to True.
-        K (int, optional): Number of iterations. Defaults to 10.
+        is_pgf (bool, optional): Whether the polynomial is a probability generating function.
+        K (int, optional): Number of iterations. Defaults to 1000.
         conditions (list, optional): List of conditions. Defaults to None.
         delta (float, optional): Perturbation value. Defaults to 0.001.
+        T (float, optional): Transmission rate. Defaults to 1.0.
         perturbation_type (str, optional): Type of perturbation. Defaults to "additive".
         bifurcation (bool, optional): Whether to return the bifurcation list. Defaults to False.
+        derivative_test (bool, optional): Whether to perform derivative test. Defaults to True.
+        max_iter (int, optional): Maximum iterations. Defaults to 1e5.
+        tol (float, optional): Convergence tolerance. Defaults to 1e-5.
+        acceleration_method (str, optional): Method for acceleration ('steffensen', 'aitken', or 'naive'). 
+                                          Defaults to 'steffensen'.
     Returns:
         float or list: The stability measure or the bifurcation list.
-
     """
-    
     T = np.float64(T)    
     my_poly_coef = np.vstack((np.arange(0, my_poly_coef.shape[0], 1), my_poly_coef)).T
     
     if conditions is None:
         conditions = []
         
-    all_og_roots_conditions = np.empty(K)
-    all_perturbed_roots_conditions = np.empty(K)
     N = my_poly_coef.shape[0]
-    vec_list = [generate_sphere_point(N) for _ in range(K)]  # Random error
+    vec_list = [generate_sphere_point(N) for _ in range(K)]
     Z = np.column_stack(vec_list)
+    # Perform QR factorization to create an orthonormal basis
+    Q, R = np.linalg.qr(Z)
 
     SCE_list = []
-    Diff_list =  []
+    Diff_list = []
 
-    # Root solving and error
-    #get machine precision 
-    #print("Finding unperturbed root...")
-    og_roots, _ = iterate_until_convergence_with_aitken(my_poly_coef, T=T, tol=tol, max_iter=max_iter)
-    
+    # Get unperturbed root using specified acceleration method
+    og_roots, _ = iterate_with_acceleration(
+        my_poly_coef, 
+        T=T, 
+        method=acceleration_method,
+        tol=tol, 
+        max_iter=max_iter
+    )
     
     for i in range(K):
         if i % 10000 == 0:
             logging.info(f"Processing perturbation {i}/{K}")
             
-        # Don't recompute unperturbed root
         delta = 2**(-16)
-        alpha_i = Z[:, i]
+        alpha_i = Q[:, i]
         
         my_perturbed_poly_coefs = _perturb_polynomial(my_poly_coef, delta, alpha_i, perturbation_type)
         
-        print(sum(my_perturbed_poly_coefs[:,1]))
-        
-        # # Use original root as initial guess for perturbed system
-        # perturbed_roots, _ = iterate_until_convergence(
-        #     my_perturbed_poly_coefs, 
-        #     T=T, 
-        #     tol=tol, 
-        #     max_iter=max_iter,
-        #     usol=og_roots  # Use previous solution as initial guess
-        # )
-        
-        
-        perturbed_roots, _ = iterate_until_convergence_with_aitken(
+        # Use same acceleration method for perturbed system
+        perturbed_roots, _ = iterate_with_acceleration(
             my_perturbed_poly_coefs, 
             T=T, 
+            method=acceleration_method,
             tol=tol, 
             max_iter=max_iter,
             usol=og_roots  # Use previous solution as initial guess
         )
         
-        
-        
         # Only append if convergence achieved
         if perturbed_roots is not None:
             SCE_list.append(np.abs(perturbed_roots - og_roots) / delta * np.abs(og_roots))
             Diff_list.append(perturbed_roots - og_roots)
-            all_og_roots_conditions[i] = og_roots
 
-    normed_sce = np.linalg.norm(SCE_list, axis=0)  # provides the total displacement of all differences.
+    normed_sce = np.linalg.norm(SCE_list, axis=0)
 
     if bifurcation:
         return Diff_list
     else:
         return normed_sce
-    # return omega(K) / omega(N) * normed_sce
 
 # print('Stop')
 # x = fast_polynomial_roots([0.2,0.3,0.5], solve_root= True)
