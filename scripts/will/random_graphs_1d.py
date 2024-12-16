@@ -2,14 +2,20 @@ from multiprocessing import Pool
 import multiprocessing as mp
 import numpy as np
 import pandas as pd
-import seaborn as sns
 import matplotlib.pyplot as plt
 from datetime import datetime
 from functools import partial
 from numba import jit, config
 import logging
-from stochastic_pgfs.laub_xia_algo import l_x_algo, is_real, in_bounds, _solve_self_consistent_equation,G1_prime,get_outbreak_size
-from stochastic_pgfs.random_graphs import poisson_degree_sequence, powerlaw_degree_sequence
+from stochastic_pgfs.laub_xia_algo import (
+    l_x_algo,
+    G1_prime,
+    get_outbreak_size
+)
+from stochastic_pgfs.random_graphs import (
+    poisson_degree_sequence, 
+    powerlaw_degree_sequence
+)
 
 
 # Enable Numba logging
@@ -40,23 +46,29 @@ def process_data(lmbd, T, degree_sequence_func, lx_func):
     outbreak_size = get_outbreak_size(my_degree_sequence, T)
     return {'lmbd': lmbd, 'T': T, 'sce': lx_func(my_degree_sequence, T=T), 'outbreak_size': outbreak_size}
 
-N_max = 1000  # Maximum value for N in the distribution
+N_max = 100  # Maximum value for N in the distribution
 my_K = int(1e3)  # number of samples per SCE estimate
-max_iter = int(1e10)
-tol = 1e-10
+max_iter = int(1e8)
+tol = 1e-8
 
 
 # params to sweep over
-T_vals = np.linspace(0.001, 1, 60)
-alpha_vals = np.linspace(2.1, 3.4, 5)
-lmbd_vals = np.linspace(1.0, 2, 5)
+# T_vals = np.linspace(0.001, 1, 60)
+# # alpha_vals = np.linspace(2.1, 3.4, 1)
+# # lmbd_vals = np.linspace(1.1, 2,1)
 
-# T_vals = np.linspace(0.001, 1, 90)
-# alpha_vals = [2.11]
-# lmbd_vals = [2.0]
+T_vals = np.linspace(0.001, 1, 50)
+alpha_vals = [2.11]
+lmbd_vals = [2.0]
 
-lx_additive = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds], is_pgf=True, perturbation_type='additive', max_iter=max_iter,tol = tol)
-lx_multiplicative = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds], is_pgf=True, perturbation_type='multiplicative', max_iter=max_iter,tol = tol)
+lx_additive = partial(l_x_algo, 
+                      max_iter=max_iter,
+                      tol = tol,
+                      K=my_K, 
+                      acceleration_method = 'naive',
+                      sampling_method = 'orthogonal'
+                    )
+
 
 poisson_degree_sequence_partial = partial(poisson_degree_sequence, N_max=N_max)
 powerlaw_degree_sequence_partial = partial(powerlaw_degree_sequence, N_max=N_max)

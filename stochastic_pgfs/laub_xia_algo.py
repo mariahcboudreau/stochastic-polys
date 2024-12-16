@@ -12,23 +12,6 @@ from stochastic_pgfs.pgfs import *
 import logging
 
 
-def double_factorial(n):
-    """
-    Calculate the double factorial of a number.
-
-    Parameters:
-    n (int): The number for which to calculate the double factorial.
-
-    Returns:
-    int: The double factorial of the given number.
-
-    Example:
-    >>> double_factorial(5)
-    15
-    """
-    return factorial2(n - 1)
-
-
 # Approximation for the Wallis factor
 def omega(n):
     """
@@ -57,79 +40,6 @@ def generate_sphere_point(dim):
     return vec / norm(vec)
 
 
-def companion_matrix(coefs):
-    """
-    Constructs the companion matrix for a given list of coefficients.
-
-    Args:
-        coefs (list or array-like): List of coefficients of a polynomial.
-
-    Returns:
-        numpy.ndarray: The companion matrix.
-
-    Raises:
-        ValueError: If the input has less than 2 coefficients.
-    """
-    coefs = np.array(coefs)
-    n = len(coefs)
-    if n < 2:
-        raise ValueError("The input must have at least 2 coefficients.")
-    A = np.zeros((n - 1, n - 1))
-    if n > 2:
-        A[1:, :-1] = np.eye(n - 2)
-    if coefs[0] != 0:
-        A[:, -1] = -np.flip(coefs[1:]) / coefs[0]  # Divide by the coefficient of the highest order term
-    else:
-        A[:, -1] = -np.flip(coefs[1:])
-    return A
-
-
-# def polynomial_roots(poly_coef):
-#     """
-#     Calculate the roots of a polynomial.
-
-#     Parameters:
-#     poly_coef (array-like): Coefficients of the polynomial in descending order.
-
-#     Returns:
-#     array-like: Array of complex numbers representing the roots of the polynomial.
-#     """
-#     C = companion_matrix(poly_coef)
-#     return np.linalg.eigvals(C)
-
-
-
-
-def fast_polynomial_roots(poly_coef, solve_root = True,tol = 1e-5):
-    """
-    Calculate the roots of a polynomial.
-
-    Parameters:
-    poly_coef (array-like): Coefficients of the polynomial in descending order.
-    tol(float): the tolerance at which the iterative root returns a solution
-
-    Returns:
-    array-like: Array of complex numbers representing the roots of the polynomial.
-    """
-   
-    p = np.flip(poly_coef)
-    #breakpoint()
-    #p = poly_coef
-    
-    u1 = 0.5
-    u2 = np.polyval(p, u1)
-    while  abs(u2-u1) > 10**(-5):
-        u1 = u2.copy()
-        u2 = np.polyval(p,u1)
-    usol = np.array([u2])
-    outbreaksol = np.array([1-u2])
-    
-    if solve_root:
-        return usol
-    else:
-        return outbreaksol
-
-
 def derivative(p_kCoeff):
     """
     Compute the derivative of a polynomial represented by its coefficients.
@@ -155,101 +65,6 @@ def derivative(p_kCoeff):
     return primeCoeff
 
 
-
-def in_bounds(coefs):
-    """
-    Check if the coefficients of a polynomial are within a specified range.
-
-    Args:
-        coefs (numpy.ndarray): The coefficients of the polynomial.
-    Returns:
-        numpy.ndarray: A boolean array indicating whether each coefficient is within the specified range.
-    """
-    epsilon = np.finfo(float).eps
-    epsilon = 1e-6
-    lower_bound = -epsilon
-    upper_bound = 1.0 - epsilon
-    # real_coefs = np.real(coefs)
-    # Check if real_coefs are greater than or equal to lower_bound
-    lower_check = np.logical_or(coefs >= lower_bound, np.isclose(coefs, lower_bound, atol=epsilon))
-    # Check if real_coefs are less than upper_bound
-    upper_check = np.logical_or(coefs <= upper_bound, np.isclose(coefs, upper_bound, atol=epsilon, rtol=0))
-    
-    return np.logical_and(lower_check, upper_check)
-
-
-def is_real(coefs):
-    """
-    Check if the given coefficients are real numbers.
-
-    Parameters:
-    coefs (array-like): The coefficients to be checked.
-
-    Returns:
-    bool: True if all coefficients are real, False otherwise.
-    """
-    return np.isclose(np.imag(coefs), 0)
-
-
-def _filter_roots(poly_roots, conditions):
-    """
-    Filters the polynomial roots based on the specified conditions.
-
-    Args:
-        poly_roots (ndarray): Array of polynomial roots.
-        conditions (list): List of conditions to filter the roots, should be is_real and in_bounds
-
-    Returns:
-        ndarray: Filtered array of polynomial roots.
-
-    Raises:
-        ValueError: If no roots meet the conditions.
-
-    """
-    if conditions:  #if conditions are specified filter roots by conditions to ensure they are real and within bounds
-        all_conditions = np.logical_and.reduce(
-            [cond(poly_roots) for cond in conditions]
-        )
-        if len(poly_roots[all_conditions]) >= 1:
-                poly_roots = poly_roots[all_conditions]
-        else:
-            # raise ValueError("No roots meet the conditions")
-            poly_roots = np.array([1])
-
-    return poly_roots
-
-def _solve_self_consistent_equation(degree_sequence, conditions=[is_real, in_bounds],derivative_test = True, solve_root = True):
-        """
-        Solve the self-consistent equation for a PGF G(u) = u by finding the roots of G(u) - u = 0.
-        See sections C and D from DOI: 10.1103/PhysRevE.64.026118
-        The roots will correspond to 1 - the giant component size.
-        Parameters:
-        - degree_sequence (list): The degree sequence of the graph.
-        - conditions (list, optional): A list of conditions that the roots must satisfy.
-            Defaults to [is_real, in_bounds].
-        
-        Returns:
-        - filtered_roots (list): The filtered roots that satisfy the given conditions.
-       """
-       
-        if (sum(derivative(degree_sequence)) < 1 and derivative_test == True): 
-            if solve_root:
-                return np.array([1])
-            else:
-                return np.array([0])
-            
-        else: 
-            filtered_roots = np.array([1])
-            my_pgf_coef = make_G_u_minus_u(degree_sequence)  # coefficients for G_u - u
-            #find poly roots with numpy 
-            #poly_roots = fast_polynomial_roots(my_pgf_coef)
-            poly_roots = np.roots(np.flip(my_pgf_coef))
-            
-            filtered_roots = _filter_roots(poly_roots, conditions)  # ensure roots are real and between 0 and 1
-            if solve_root:
-                return np.min(filtered_roots)
-            else:
-                return 1 - np.min(filtered_roots)
 
 
 def _perturb_polynomial(poly_coefs, delta, alpha_i, perturbation_type):
@@ -298,9 +113,14 @@ def G0(x, pk, T):
 
 @jit(nopython=True)
 def G1(x, pk, T):
-    x = (1 - T) + T * x
-    numerator = np.power(x, pk[:, 0] - 1) * pk[:, 1] * pk[:, 0]
-    denominator = pk[:, 0].dot(pk[:, 1])
+    """Calculate G1 with aligned arrays"""
+    x = np.float64(1 - T) + np.float64(T) * x
+    # Split array access and ensure float64
+    pk_0 = pk[:, 0].astype(np.float64)
+    pk_1 = pk[:, 1].astype(np.float64)
+    
+    numerator = np.power(x, pk_0 - 1) * pk_1 * pk_0
+    denominator = pk_0.dot(pk_1)  # Use dot product on contiguous arrays
     return numerator.sum() / denominator
 
 @jit(nopython=True)
@@ -334,119 +154,144 @@ def get_outbreak_size(my_degree_sequence, T, method='steffensen'):
     outbreak_size = 1 - u2
     return outbreak_size
 
-def aitken_accelerate(x_values):
-    """Post-processes a sequence using Aitken's method"""
-    x_values = np.asarray(x_values, dtype=float)
-    n = len(x_values)
-    if n < 3:
-        return x_values.copy()
+# @jit(nopython=True)
+# def aitken_accelerate(x_values):
+#     """Post-processes a sequence using Aitken's method"""
+#     # Pre-allocate a numpy array instead of converting list
+#     n = len(x_values)
+#     result = np.zeros(n, dtype=np.float64)
+#     for i in range(n):
+#         result[i] = x_values[i]
     
-    y_values = []
-    for i in range(n - 2):
-        x_n = x_values[i]
-        x_n1 = x_values[i + 1]
-        x_n2 = x_values[i + 2]
-        
-        delta_x_n = x_n1 - x_n
-        delta_x_n1 = x_n2 - x_n1
-        delta2_x_n = delta_x_n1 - delta_x_n
-        
-        if delta2_x_n != 0:
-            y_n = x_n - (delta_x_n**2) / delta2_x_n
-        else:
-            y_n = x_n2
-        y_values.append(y_n)
+#     x_n = result[-3]
+#     x_n1 = result[-2]
+#     x_n2 = result[-1]
     
-    return np.array(y_values)
+#     denominator = x_n2 - 2*x_n1 + x_n
+#     if abs(denominator) < 1e-14:
+#         return x_n2
+    
 
-# Steffensen's method implementation
-def steffensen_iterate(f, x0, tol=1e-5, max_iter=100):
-    """Generates sequence using Steffensen's method directly"""
-    x = x0
+@jit(nopython=True)
+def _aitken_iteration(pk, T, tol, max_iter, acceleration_interval, usol):
+    """
+    Perform iteration using Aitken's acceleration method with safe array handling.
+    """
+    # Ensure input arrays are properly typed
+    pk = pk.astype(np.float64)
+    T = np.float64(T)
+    tol = np.float64(tol)
+    usol = np.float64(usol)
+    
+    # Pre-allocate fixed-size array for sequence values
+    u_values = np.zeros(3, dtype=np.float64)  # Only need last 3 values
+    
+    u1 = usol
+    u2 = G1(u1, pk, T)
+    
+    # Initialize sequence
+    u_values[0] = u1
+    u_values[1] = u2
+    u_values[2] = G1(u2, pk, T)
+    
     for i in range(max_iter):
-        p0 = x
-        p1 = f(p0)
-        p2 = f(p1)
+        if abs(u2 - u1) < tol:
+            break
+            
+        if i % acceleration_interval == 0 and i > 0:
+            # Apply Aitken acceleration using most recent values
+            denominator = u_values[2] - 2.0*u_values[1] + u_values[0]
+            if abs(denominator) > tol:
+                # Safe acceleration computation
+                u2 = u_values[0] - ((u_values[1] - u_values[0])**2) / denominator
+                
+                # Reset sequence with accelerated value
+                u_values[0] = u2
+                u_values[1] = G1(u2, pk, T)
+                u_values[2] = G1(u_values[1], pk, T)
+            else:
+                # Regular iteration if denominator is too small
+                u1 = u2
+                u2 = G1(u1, pk, T)
+                
+                # Shift values
+                u_values[0] = u_values[1]
+                u_values[1] = u_values[2]
+                u_values[2] = u2
+        else:
+            # Regular iteration
+            u1 = u2
+            u2 = G1(u1, pk, T)
+            
+            # Shift values
+            u_values[0] = u_values[1]
+            u_values[1] = u_values[2]
+            u_values[2] = u2
+    
+    return u1, u2
+
+@jit(nopython=True)
+def _naive_iteration(pk, T, tol, max_iter, usol):
+    """Perform simple fixed-point iteration."""
+    # Convert to float64 without using ascontiguousarray
+    pk = pk.astype(np.float64)
+    u1 = np.float64(usol)
+    u2 = G1(u1, pk, T)
+    
+    for i in range(max_iter):
+        if abs(u2 - u1) < tol:
+            break
+        u1 = u2
+        u2 = G1(u1, pk, T)
+    return u1, u2
+
+@jit(nopython=True)
+def _steffensen_iteration(pk, T, tol, max_iter, usol):
+    """Perform Steffensen iteration."""
+    # Convert to float64 without using ascontiguousarray
+    pk = pk.astype(np.float64)
+    u1 = np.float64(usol)
+    u2 = u1
+    
+    for i in range(max_iter):
+        p0 = u1
+        p1 = G1(p0, pk, T)
+        p2 = G1(p1, pk, T)
         
         denominator = p2 - 2*p1 + p0
         if abs(denominator) < tol:
-            return x
+            u2 = p0
+            break
             
-        x = p0 - (p1 - p0)**2 / denominator
+        u2 = p0 - (p1 - p0)**2 / denominator
         
-        if abs(x - p0) < tol:
-            return x
+        if abs(u2 - u1) < tol:
+            break
             
-    return x
+        u1 = u2
+    return u1, u2
 
+@jit(nopython=True)
 def iterate_with_acceleration(pk, T=1, method='aitken', tol=1e-5, usol=0.5, max_iter=int(1e4), acceleration_interval=10):
-    """
-    Iterate with choice of acceleration method.
+    """Iterate with acceleration and aligned arrays."""
+    # Convert types without using ascontiguousarray
+    pk = pk.astype(np.float64)
+    T = np.float64(T)
+    tol = np.float64(tol)
     
-    Parameters:
-        pk: Probability kernel
-        T: Temperature parameter
-        method: 'aitken', 'steffensen', or 'naive'
-        tol: Convergence tolerance
-        usol: Initial guess
-        max_iter: Maximum iterations
-        acceleration_interval: How often to apply acceleration (for Aitken)
-    """
     if method not in ['aitken', 'steffensen', 'naive']:
         raise ValueError("Method must be 'aitken', 'steffensen', or 'naive'")
    
     if method == 'naive':
-        u1 = np.float64(usol)
-        u2 = G1(u1, pk, T)
-        for i in range(max_iter):
-            if abs(u2 - u1) < tol:
-                break
-            u1 = u2
-            u2 = G1(u1, pk, T)
-    
+        return _naive_iteration(pk, T, tol, max_iter, usol)
     elif method == 'aitken':
-        u_values = []
-        u1 = np.float64(usol)
-        u2 = G1(u1, pk, T)
-        u_values.append(u2)
-        
-        for i in range(max_iter):
-            if abs(u2 - u1) < tol:
-                break
+        return _aitken_iteration(pk, T, tol, max_iter, acceleration_interval, usol)
+    elif method == 'steffensen':
+        return _steffensen_iteration(pk, T, tol, max_iter, usol)
             
-            u1 = u2
-            u2 = G1(u1, pk, T)
-            u_values.append(u2)
-            
-            if i > 2 and i % acceleration_interval == 0:
-                accelerated = aitken_accelerate(u_values)
-                u_values = accelerated.tolist()
-                u2 = u_values[-1]
-                
-    else:  # Steffensen's method
-        u1 = np.float64(usol)
-        for i in range(max_iter):
-            p0 = u1
-            p1 = G1(p0, pk, T)
-            p2 = G1(p1, pk, T)
-            
-            denominator = p2 - 2*p1 + p0
-            if abs(denominator) < tol:
-                u2 = p0
-                break
-                
-            u2 = p0 - (p1 - p0)**2 / denominator
-            
-            if abs(u2 - u1) < tol:
-                break
-                
-            u1 = u2
-            
-    return u1, u2
 
 def l_x_algo(
     my_poly_coef,
-    is_pgf=True,
     K=1000,
     conditions=None,
     delta=0.001,
@@ -456,85 +301,94 @@ def l_x_algo(
     derivative_test=True,
     max_iter=int(1e5),
     tol=1e-5,
-    acceleration_method='steffensen'  # Add this parameter
+    acceleration_method='steffensen',
+    sampling_method='orthogonal'
 ):
     """
-    Calculate the stability measure using the Laub-Xia algorithm
-    
-    Args:
-        my_poly_coef (array-like): Coefficients of the polynomial.
-        is_pgf (bool, optional): Whether the polynomial is a probability generating function.
-        K (int, optional): Number of iterations. Defaults to 1000.
-        conditions (list, optional): List of conditions. Defaults to None.
-        delta (float, optional): Perturbation value. Defaults to 0.001.
-        T (float, optional): Transmission rate. Defaults to 1.0.
-        perturbation_type (str, optional): Type of perturbation. Defaults to "additive".
-        bifurcation (bool, optional): Whether to return the bifurcation list. Defaults to False.
-        derivative_test (bool, optional): Whether to perform derivative test. Defaults to True.
-        max_iter (int, optional): Maximum iterations. Defaults to 1e5.
-        tol (float, optional): Convergence tolerance. Defaults to 1e-5.
-        acceleration_method (str, optional): Method for acceleration ('steffensen', 'aitken', or 'naive'). 
-                                          Defaults to 'steffensen'.
-    Returns:
-        float or list: The stability measure or the bifurcation list.
+    Calculate the stability measure using the Laub-Xia algorithm with improved memory management
     """
-    T = np.float64(T)    
-    my_poly_coef = np.vstack((np.arange(0, my_poly_coef.shape[0], 1), my_poly_coef)).T
-    
-    if conditions is None:
-        conditions = []
+    try:
+        # Ensure input arrays are contiguous and properly typed
+        T = np.float64(T)
+        my_poly_coef = np.ascontiguousarray(my_poly_coef)
+        my_poly_coef = np.vstack((np.arange(0, my_poly_coef.shape[0], 1), my_poly_coef)).T.copy()
         
-    N = my_poly_coef.shape[0]
-    vec_list = [generate_sphere_point(N) for _ in range(K)]
-    Z = np.column_stack(vec_list)
-    # Perform QR factorization to create an orthonormal basis
-    Q, R = np.linalg.qr(Z)
-
-    SCE_list = []
-    Diff_list = []
-    
-
-    # Get unperturbed root using specified acceleration method
-    og_roots, _ = iterate_with_acceleration(
-        my_poly_coef, 
-        T=T, 
-        method=acceleration_method,
-        tol=tol, 
-        max_iter=max_iter
-    )
-    
-    for i in range(K):
-        if i % 10000 == 0:
-            logging.info(f"Processing perturbation {i}/{K}")
+        if conditions is None:
+            conditions = []
             
-        delta = 2**(-16)
-        alpha_i = Z[:,i]#Q[:, i]
+        N = my_poly_coef.shape[0]
         
-        my_perturbed_poly_coefs = _perturb_polynomial(my_poly_coef, delta, alpha_i, perturbation_type)
+        # Generate perturbation vectors
+        if sampling_method == 'orthogonal':
+            # Generate matrix of random vectors and perform QR decomposition
+            Z = np.random.randn(N, K)
+            Q, R = np.linalg.qr(Z, mode='reduced')
+            Z = np.ascontiguousarray(Q[:, :K])  # Ensure we only take K columns
+            K = Z.shape[1]  # Update K to match actual number of vectors
+        else:
+            # Generate random unit vectors
+            Z = np.empty((N, K), dtype=np.float64)
+            for i in range(K):
+                vec = np.random.randn(N)
+                Z[:, i] = vec / np.linalg.norm(vec)
         
-        # Use same acceleration method for perturbed system
-        perturbed_roots, _ = iterate_with_acceleration(
-            my_perturbed_poly_coefs, 
+        # Pre-allocate arrays for results
+        SCE_list = []
+        Diff_list = []
+        
+        # Get unperturbed root
+        og_roots, _ = iterate_with_acceleration(
+            my_poly_coef, 
             T=T, 
             method=acceleration_method,
             tol=tol, 
-            max_iter=max_iter,
-            usol=og_roots  # Use previous solution as initial guess
+            max_iter=max_iter
         )
         
+        delta = np.float64(2**(-16))
         
-        # Only append if convergence achieved
-        if perturbed_roots is not None:
-            SCE_list.append(np.abs(perturbed_roots - og_roots) / delta * np.abs(og_roots))
-            Diff_list.append(perturbed_roots - og_roots)
-
-    normed_sce = np.linalg.norm(SCE_list, axis=0)
-    breakpoint()
-
-    if bifurcation:
-        return Diff_list
-    else:
-        return normed_sce
+        # Process perturbations
+        for i in range(K):
+            if i % 1000 == 0:
+                logging.info(f"Processing perturbation {i}/{K}")
+                
+            alpha_i = Z[:, i]
+            my_perturbed_poly_coefs = _perturb_polynomial(
+                my_poly_coef.copy(), 
+                delta, 
+                alpha_i, 
+                perturbation_type
+            )
+            
+            perturbed_roots, _ = iterate_with_acceleration(
+                my_perturbed_poly_coefs,
+                T=T,
+                method=acceleration_method,
+                tol=tol,
+                max_iter=max_iter,
+                usol=og_roots
+            )
+            
+            if perturbed_roots is not None:
+                SCE_list.append(np.abs(perturbed_roots - og_roots) / delta * np.abs(og_roots))
+                if bifurcation:
+                    Diff_list.append(perturbed_roots - og_roots)
+        
+        # Convert lists to arrays and compute final result
+        if bifurcation:
+            return np.array(Diff_list, dtype=np.float64)
+        else:
+            SCE_array = np.array(SCE_list, dtype=np.float64)
+            return np.linalg.norm(SCE_array, axis=0)
+            
+    except Exception as e:
+        logging.error(f"Error in l_x_algo: {str(e)}")
+        raise
+    finally:
+        # Clean up large arrays
+        Z = None
+        SCE_list = None
+        Diff_list = None
 
 # print('Stop')
 # x = fast_polynomial_roots([0.2,0.3,0.5], solve_root= True)
