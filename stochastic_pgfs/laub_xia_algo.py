@@ -7,7 +7,12 @@ import random
 import time
 from numba import jit
 import tqdm
+import sys
+import os
 
+import os
+import sys
+sys.path.insert(1,os.getcwd())
 from stochastic_pgfs.pgfs import *
 import logging
 
