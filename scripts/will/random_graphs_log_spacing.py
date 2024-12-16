@@ -2,7 +2,7 @@ import numpy as np
 import timeit
 from stochastic_pgfs.pgfs import PGF,make_G_u_minus_u,numerical_inversion,percolated_pgf
 from stochastic_pgfs.viz_utils import condition_number_heatmap
-from stochastic_pgfs.laub_xia_algo import l_x_algo, is_real, in_bounds,_solve_self_consistent_equation,G1_prime,get_outbreak_size,iterate_until_convergence
+from stochastic_pgfs.laub_xia_algo import l_x_algo,G1_prime,get_outbreak_size
 from stochastic_pgfs.random_graphs import powerlaw_degree_sequence,poisson_degree_sequence
 import numpy as np
 from scipy.stats import nbinom
