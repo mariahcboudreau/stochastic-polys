@@ -104,11 +104,23 @@ def _perturb_polynomial(poly_coefs, delta, alpha_i, perturbation_type):
 
 
 def l_x_metric(og_roots, perturbed_roots, delta, K, N):
-    SCE_list = []
-    SCE_list.append(np.abs(og_roots - perturbed_roots) / delta * np.abs(og_roots))
-    normed_sce = np.linalg.norm(SCE_list, axis=0)
-
-    return omega(K) / omega(N) * np.mean(normed_sce)
+    """
+    Calculate the Laub-Xia stability metric as defined in the paper.
+    
+    Args:
+        og_roots: Original unperturbed roots
+        perturbed_roots: Perturbed roots
+        delta: Perturbation size
+        K: Number of perturbation vectors
+        N: Dimension of the system
+    
+    Returns:
+        float: Computed SCE value
+    """
+    # Calculate relative error
+    relative_error = np.abs(perturbed_roots - og_roots) / (delta * np.abs(og_roots))
+    # Apply normalization factors
+    return omega(K) / omega(N) * np.linalg.norm(relative_error)
 
 
 @jit(nopython=True)
@@ -274,7 +286,6 @@ def iterate_with_acceleration(pk, T=1, method='aitken', tol=1e-5, usol=0.5, max_
         return _aitken_iteration(pk, T, tol, max_iter, acceleration_interval, usol)
     elif method == 'steffensen':
         return _steffensen_iteration(pk, T, tol, max_iter, usol)
-            
 
 def l_x_algo(
     my_poly_coef,
@@ -290,91 +301,76 @@ def l_x_algo(
     acceleration_method='steffensen',
     sampling_method='orthogonal'
 ):
-    """
-    Calculate the stability measure using the Laub-Xia algorithm with improved memory management
-    """
-    try:
-        # Ensure input arrays are contiguous and properly typed
-        T = np.float64(T)
-        my_poly_coef = np.ascontiguousarray(my_poly_coef)
-        my_poly_coef = np.vstack((np.arange(0, my_poly_coef.shape[0], 1), my_poly_coef)).T.copy()
-        
-        if conditions is None:
-            conditions = []
+    """Calculate stability measure using the Laub-Xia algorithm"""
+    # Ensure input arrays are contiguous and properly typed
+    T = np.float64(T)
+    my_poly_coef = np.ascontiguousarray(my_poly_coef)
+    my_poly_coef = np.vstack((np.arange(0, my_poly_coef.shape[0], 1), my_poly_coef)).T.copy()
+    
+    if conditions is None:
+        conditions = []
+    
+    N = my_poly_coef.shape[0]
+    
+    # Generate perturbation vectors
+    if sampling_method == 'orthogonal':
+        # Generate matrix of random vectors and perform QR decomposition
+        Z = np.random.randn(N, K)
+        Q, R = np.linalg.qr(Z, mode='reduced')
+        Z = np.ascontiguousarray(Q[:, :K])  # Ensure we only take K columns
+        K = Z.shape[1]  # Update K to match actual number of vectors
+    else:
+        # Generate random unit vectors
+        Z = np.empty((N, K), dtype=np.float64)
+        for i in range(K):
+            vec = np.random.randn(N)
+            Z[:, i] = vec / np.linalg.norm(vec)
+    
+    # Pre-allocate arrays for results
+    sce_values = np.zeros(K, dtype=np.float64)
+    
+    og_roots, _ = iterate_with_acceleration(
+        my_poly_coef, 
+        T=T, 
+        method=acceleration_method,
+        tol=tol, 
+        max_iter=max_iter
+    )
+    
+    delta = np.float64(2**(-16))
+    
+    # Process perturbations
+    og_roots_list = np.zeros((K), dtype=np.float64)
+    perturbed_roots_list = np.zeros((K), dtype=np.float64)
+    SCE_list = []
+    
+    for i in range(K):
+        if i % 1000 == 0:
+            logging.info(f"Processing perturbation {i}/{K}")
             
-        N = my_poly_coef.shape[0]
-        
-        # Generate perturbation vectors
-        if sampling_method == 'orthogonal':
-            # Generate matrix of random vectors and perform QR decomposition
-            Z = np.random.randn(N, K)
-            Q, R = np.linalg.qr(Z, mode='reduced')
-            Z = np.ascontiguousarray(Q[:, :K])  # Ensure we only take K columns
-            K = Z.shape[1]  # Update K to match actual number of vectors
-        else:
-            # Generate random unit vectors
-            Z = np.empty((N, K), dtype=np.float64)
-            for i in range(K):
-                vec = np.random.randn(N)
-                Z[:, i] = vec / np.linalg.norm(vec)
-        
-        # Pre-allocate arrays for results
-        SCE_list = []
-        Diff_list = []
-        
-        # Get unperturbed root
-        og_roots, _ = iterate_with_acceleration(
-            my_poly_coef, 
-            T=T, 
-            method=acceleration_method,
-            tol=tol, 
-            max_iter=max_iter
+        alpha_i = Z[:, i]
+        my_perturbed_poly_coefs = _perturb_polynomial(
+            my_poly_coef.copy(), 
+            delta, 
+            alpha_i, 
+            perturbation_type
         )
         
-        delta = np.float64(2**(-16))
-        
-        # Process perturbations
-        for i in range(K):
-            if i % 1000 == 0:
-                logging.info(f"Processing perturbation {i}/{K}")
-                
-            alpha_i = Z[:, i]
-            my_perturbed_poly_coefs = _perturb_polynomial(
-                my_poly_coef.copy(), 
-                delta, 
-                alpha_i, 
-                perturbation_type
-            )
+        perturbed_roots, _ = iterate_with_acceleration(
+            my_perturbed_poly_coefs,
+            T=T,
+            method=acceleration_method,
+            tol=tol,
+            max_iter=max_iter,
+            usol=og_roots
+        )
+       
+        perturbed_roots_list[i] = perturbed_roots
+   
+    return np.linalg.norm(np.abs(perturbed_roots_list - og_roots) / delta * np.abs(og_roots))* omega(K) / omega(N)
+    
+
             
-            perturbed_roots, _ = iterate_with_acceleration(
-                my_perturbed_poly_coefs,
-                T=T,
-                method=acceleration_method,
-                tol=tol,
-                max_iter=max_iter,
-                usol=og_roots
-            )
-            
-            if perturbed_roots is not None:
-                SCE_list.append(np.abs(perturbed_roots - og_roots) / delta * np.abs(og_roots))
-                if bifurcation:
-                    Diff_list.append(perturbed_roots - og_roots)
-        
-        # Convert lists to arrays and compute final result
-        if bifurcation:
-            return np.array(Diff_list, dtype=np.float64)
-        else:
-            SCE_array = np.array(SCE_list, dtype=np.float64)
-            return np.linalg.norm(SCE_array, axis=0)
-            
-    except Exception as e:
-        logging.error(f"Error in l_x_algo: {str(e)}")
-        raise
-    finally:
-        # Clean up large arrays
-        Z = None
-        SCE_list = None
-        Diff_list = None
 
 # print('Stop')
 # x = fast_polynomial_roots([0.2,0.3,0.5], solve_root= True)
