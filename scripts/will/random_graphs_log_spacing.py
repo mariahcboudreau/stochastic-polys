@@ -1,7 +1,6 @@
 import numpy as np
 import timeit
 from stochastic_pgfs.pgfs import PGF,make_G_u_minus_u,numerical_inversion,percolated_pgf
-from stochastic_pgfs.viz_utils import condition_number_heatmap
 from stochastic_pgfs.laub_xia_algo import l_x_algo,G1_prime,get_outbreak_size
 from stochastic_pgfs.random_graphs import powerlaw_degree_sequence,poisson_degree_sequence
 import numpy as np
@@ -41,7 +40,7 @@ def process_data(lmbd, T,degree_sequence_func,lx_func):
 
 N_max = 100  # Maximum value for N in the distribution
 my_K = int(1e6)#number of samples per SCE estimte
-max_iter = int(1e5)
+max_iter = int(1e8)
 tol = 1e-10
 
 # #params to sweep over
@@ -55,8 +54,13 @@ lmbd_vals = np.linspace(0.001,2,10)
 
 
 #create partial function for the condition number heatmap for addative and multiplicative noise
-lx_addative = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='additive',max_iter = max_iter,tol = tol)
-lx_multiplicative = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='multiplicative',max_iter = max_iter)
+lx_additive = partial(l_x_algo, 
+                      max_iter=max_iter,
+                      tol = tol,
+                      K=my_K, 
+                      acceleration_method = 'steffensen',
+                      sampling_method = 'orthogonal'
+                    )
 
 #partial functions for degree distriubtions
 poisson_degree_sequence_partial = partial(poisson_degree_sequence,N_max = N_max)
@@ -65,7 +69,7 @@ powerlaw_degree_sequence_partial = partial(powerlaw_degree_sequence,N_max = N_ma
 #data structures for sweep
 data_dict_list = []
 dist_dict = {'poisson': poisson_degree_sequence_partial,'powerlaw': powerlaw_degree_sequence_partial}
-noise_dict = {'addative': lx_addative}
+noise_dict = {'addative': lx_additive}
 
 control_params_dict = {'poisson': lmbd_vals,'powerlaw': alpha_vals}
 
