@@ -11,7 +11,6 @@ from stochastic_pgfs.random_graphs import (
     make_config_model,
     plot_graph,
     mean_power_law,
-    second_moment_power_law,
     poisson_degree_sequence
 )
 
