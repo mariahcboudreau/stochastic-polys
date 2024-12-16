@@ -159,22 +159,6 @@ def get_outbreak_size(my_degree_sequence, T, method='steffensen'):
     outbreak_size = 1 - u2
     return outbreak_size
 
-# @jit(nopython=True)
-# def aitken_accelerate(x_values):
-#     """Post-processes a sequence using Aitken's method"""
-#     # Pre-allocate a numpy array instead of converting list
-#     n = len(x_values)
-#     result = np.zeros(n, dtype=np.float64)
-#     for i in range(n):
-#         result[i] = x_values[i]
-    
-#     x_n = result[-3]
-#     x_n1 = result[-2]
-#     x_n2 = result[-1]
-    
-#     denominator = x_n2 - 2*x_n1 + x_n
-#     if abs(denominator) < 1e-14:
-#         return x_n2
     
 
 @jit(nopython=True)
@@ -238,7 +222,6 @@ def _aitken_iteration(pk, T, tol, max_iter, acceleration_interval, usol):
 @jit(nopython=True)
 def _naive_iteration(pk, T, tol, max_iter, usol):
     """Perform simple fixed-point iteration."""
-    # Convert to float64 without using ascontiguousarray
     pk = pk.astype(np.float64)
     u1 = np.float64(usol)
     u2 = G1(u1, pk, T)
@@ -253,7 +236,6 @@ def _naive_iteration(pk, T, tol, max_iter, usol):
 @jit(nopython=True)
 def _steffensen_iteration(pk, T, tol, max_iter, usol):
     """Perform Steffensen iteration."""
-    # Convert to float64 without using ascontiguousarray
     pk = pk.astype(np.float64)
     u1 = np.float64(usol)
     u2 = u1
@@ -279,7 +261,6 @@ def _steffensen_iteration(pk, T, tol, max_iter, usol):
 @jit(nopython=True)
 def iterate_with_acceleration(pk, T=1, method='aitken', tol=1e-5, usol=0.5, max_iter=int(1e4), acceleration_interval=10):
     """Iterate with acceleration and aligned arrays."""
-    # Convert types without using ascontiguousarray
     pk = pk.astype(np.float64)
     T = np.float64(T)
     tol = np.float64(tol)
