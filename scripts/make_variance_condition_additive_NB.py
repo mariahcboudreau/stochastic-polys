@@ -4,9 +4,7 @@ sys.path.insert(1,os.getcwd())
 
 from stochastic_pgfs.laub_xia_algo import l_x_algo, is_real, in_bounds, _solve_self_consistent_equation, fast_polynomial_roots
 from stochastic_pgfs.pgfs import PGF, make_G_u_minus_u
-from stochastic_pgfs.viz_utils import outbreak_contours, condition_number_heatmap
-import numpy as np
-from stochastic_pgfs.sim import *
+from stochastic_pgfs.viz_utils import outbreak_contours, condition_number_heatmap import numpy as np from stochastic_pgfs.sim import *
 from scipy.stats import nbinom
 import pandas as pd
 import seaborn as sns
