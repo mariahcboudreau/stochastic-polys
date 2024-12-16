@@ -46,26 +46,26 @@ def process_data(lmbd, T, degree_sequence_func, lx_func):
     outbreak_size = get_outbreak_size(my_degree_sequence, T)
     return {'lmbd': lmbd, 'T': T, 'sce': lx_func(my_degree_sequence, T=T), 'outbreak_size': outbreak_size}
 
-N_max = 100  # Maximum value for N in the distribution
-my_K = int(1e3)  # number of samples per SCE estimate
+N_max = 1000  # Maximum value for N in the distribution
+my_K = int(1e4)  # number of samples per SCE estimate
 max_iter = int(1e8)
-tol = 1e-8
+tol = 1e-10
 
 
-# params to sweep over
-# T_vals = np.linspace(0.001, 1, 60)
-# # alpha_vals = np.linspace(2.1, 3.4, 1)
-# # lmbd_vals = np.linspace(1.1, 2,1)
+#params to sweep over
+T_vals = np.linspace(0.001, 1, 60)
+alpha_vals = np.linspace(2.1, 3.4,30)
+lmbd_vals = np.linspace(1.1, 2,30)
 
-T_vals = np.linspace(0.001, 1, 50)
-alpha_vals = [2.11]
-lmbd_vals = [2.0]
+# T_vals = np.linspace(0.001, 1, 50)
+# alpha_vals = [2.11]
+# lmbd_vals = [2.0]
 
 lx_additive = partial(l_x_algo, 
                       max_iter=max_iter,
                       tol = tol,
                       K=my_K, 
-                      acceleration_method = 'naive',
+                      acceleration_method = 'steffensen',
                       sampling_method = 'orthogonal'
                     )
 
@@ -115,27 +115,3 @@ if __name__ == '__main__':
             df = df.explode(['lmbd', 'sce', 'outbreak_size'])
             df.outbreak_size = df.outbreak_size.apply(lambda x: x.real)
             df.to_csv(f"data/random_graphs/random_graphs_sweep_{dist_name}_{noise_name}.csv")
-
-
-
-
-# N_max = 1000  # Maximum value for N in the distribution
-# my_K = int(1e1)  # number of samples per SCE estimate
-# max_iter = int(1e5)
-
-# # params to sweep over
-# T_vals = np.linspace(0.001, 1, 60)
-# alpha_vals = np.linspace(1.8, 4, 30)
-# lmbd_vals = np.linspace(0.001, 2, 30)
-
-# lx_additive = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds], is_pgf=True, perturbation_type='additive', max_iter=max_iter)
-# lx_multiplicative = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds], is_pgf=True, perturbation_type='multiplicative', max_iter=max_iter)
-
-# poisson_degree_sequence_partial = partial(poisson_degree_sequence, N_max=N_max)
-# powerlaw_degree_sequence_partial = partial(powerlaw_degree_sequence, N_max=N_max)
-
-
-
-
-
-
