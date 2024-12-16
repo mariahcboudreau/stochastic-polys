@@ -37,11 +37,13 @@ def poisson_degree_sequence(lambd,n = 100):
 
 
 lmbd_vals = np.linspace(0,1,20)
+t_vals = np.linspace(0.1,1,10)
 
 N_max = 10  # Maximum value for N in the distribution
 
 #create partial function for the condition number heatmap
-my_K = 1000
+#my_K = 1000
+my_K = 1
 
 #create partial function for the condition number heatmap for additive and multiplicative noise
 lx_addative = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='additive')
@@ -55,16 +57,29 @@ lx_func = lx_addative
 degree_sequence_func = poisson_degree_sequence
 sce_list = []
 outbreak_size_list = []
+t_list = []
+row_list = []
 
-for lmbd in lmbd_vals: 
-    degree_sequence = degree_sequence_func(lmbd,N_max)
-    lx_func(degree_sequence)
-    outbreak_size = 1- np.min(_solve_self_consistent_equation(degree_sequence))
-    outbreak_size_list.append(outbreak_size)
-    sce_list.append(_solve_self_consistent_equation(degree_sequence))
+for T in t_vals:
+    for lmbd in lmbd_vals: 
+        degree_sequence = degree_sequence_func(lmbd,N_max)
+        my_pgf = PGF(degree_sequence)
+        #perform percolation on the degree sequece by composing the pgf with the (1-T)+Tx 
+        my_percolated_pgf = partial(percolated_pgf,my_pgf,T = T)
+        #invert the percolated pgf to get the coefficients
+        percolated_coef = numerical_inversion(my_percolated_pgf)
+        lx_func(percolated_coef)
+        outbreak_size = 1- np.min(_solve_self_consistent_equation(percolated_coef))
+        condition_number = _solve_self_consistent_equation(percolated_coef)
+        row = {"T":T,"lmbd":lmbd,"outbreak_size":outbreak_size,'condition_number': condition_number}
+        row_list.append(row)
 
+df = pd.DataFrame(row_list)
 
-fig,ax = plt.subplots()
+fig,ax = plt.subplots(nrows = 2,sharex = True)
+sns.scatterplot(data = df,x = 'lmbd',y = 'outbreak_size',hue = 'T',ax = ax[0])
+sns.scatterplot(data = df,x = 'lmbd',y = 'condition_number',hue = 'T',ax = ax[0])
+plt.show()
 
 
 

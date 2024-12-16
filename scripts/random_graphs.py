@@ -13,10 +13,11 @@ import copy
 date = datetime.today().strftime('%m-%d-%Y')
 
 #define degree sequence for ER graph 
-def er_degree_sequence(p,n,support = np.arange(0,100)):
+def er_degree_sequence(lmbd,n,support = np.arange(0,100)):
     #poisosn distribution
-    degree_sequence = stats.poisson.pmf(support,n*p)
+    degree_sequence = stats.poisson.pmf(support,lmbd)
     return degree_sequence
+
 
 def powerlaw_degree_sequence(alpha,N_max):
     #power law
