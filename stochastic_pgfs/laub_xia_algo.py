@@ -337,12 +337,16 @@ def l_x_algo(
         max_iter=max_iter
     )
     
-    delta = np.float64(2**(-16))
+    #delta = np.float64(2**(-16))
+    delta = np.sqrt(np.abs(og_roots) * np.finfo(np.float64).eps)
     
     # Process perturbations
     og_roots_list = np.zeros((K), dtype=np.float64)
     perturbed_roots_list = np.zeros((K), dtype=np.float64)
     SCE_list = []
+    
+    # Calculate function value at fixed point
+    function_value = G1(og_roots, my_poly_coef, T)
     
     for i in range(K):
         if i % 1000 == 0:
@@ -367,11 +371,8 @@ def l_x_algo(
        
         perturbed_roots_list[i] = perturbed_roots
    
-    return np.linalg.norm(np.abs(perturbed_roots_list - og_roots) / delta * np.abs(og_roots))* omega(K) / omega(N)
+    # Calculate scaled gradient norm
+    gradient_norm = np.linalg.norm(np.abs(perturbed_roots_list - og_roots) / delta * np.abs(og_roots))
     
-
-            
-
-# print('Stop')
-# x = fast_polynomial_roots([0.2,0.3,0.5], solve_root= True)
-# print(x)
+    # Scale by function value and Wallis factors
+    return (gradient_norm / np.abs(function_value)) * omega(K) / omega(N)
