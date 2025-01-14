@@ -318,6 +318,14 @@ def l_x_algo(
                 vec = np.random.randn(N)
                 Z[:, i] = vec / np.linalg.norm(vec)
         
+        # Debugging: Print the shape and values of Z
+        print("Shape of Z:", Z.shape)
+        print("Values of Z:", Z)
+        
+        # Check if Z contains any NaN or infinite values
+        assert not np.isnan(Z).any(), "Z contains NaN values"
+        assert not np.isinf(Z).any(), "Z contains infinite values"
+
         # Pre-allocate arrays for results
         SCE_list = []
         Diff_list = []
