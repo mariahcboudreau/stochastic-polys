@@ -3,7 +3,6 @@ import numpy as np
 
 from stochastic_pgfs.pgfs import PGF, make_G_u_minus_u, numerical_inversion, percolated_pgf
 
-from stochastic_pgfs.laub_xia_algo import _solve_self_consistent_equation
 
 from stochastic_pgfs.random_graphs import (
     er_degree_sequence,
