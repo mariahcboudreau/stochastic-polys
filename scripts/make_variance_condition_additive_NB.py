@@ -47,17 +47,21 @@ date = datetime.today().strftime('%m-%d-%Y')
 #         return 1 - og_roots
 
 
-alpha_vals = np.linspace(0.01,1,100)
+#alpha_vals = np.linspace(0.01,1,10)
+alpha_vals = np.linspace(0.01,1,10)
 
 # R0_vals = np.linspace(0.5,4,10)
-R0_vals = np.arange(0.8, 4.05, 0.05)
+#R0_vals = np.arange(0.8, 4.05, 0.05)
+R0_vals = np.arange(1.1, 4.05, 0.05)
 
 N_max = 200 # Maximum value for N in the distribution
+max_iter = int(1e8)
+tol = 1e-10
 
 #create partial function for the condition number heatmap
 my_K = 1000
 
-lx_additive = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds],perturbation_type='additive')
+lx_additive = partial(l_x_algo, K=my_K, tol = tol, max_iter = max_iter)
 # var_addative = partial(variance_sim, K=1000, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='additive')
 
 
@@ -66,16 +70,10 @@ condition_nums_additive= condition_number_heatmap(lx_additive, alpha_vals, R0_va
 
 # roots = partial(fast_polynomial_roots, solve_root = True)
 # outbreaks = partial(fast_polynomial_roots, solve_root = False)
-
 # roots = partial(pgf_solver, conditions=[is_real, in_bounds], solve_root = True)
 # outbreaks = partial(pgf_solver, conditions=[is_real, in_bounds], solve_root = False)
-
-
 # roots_lines = outbreak_contours(roots, alpha_vals, R0_vals, N_max)
 # outbreak_lines = outbreak_contours(outbreaks, alpha_vals, R0_vals, N_max)
-
-
-
 ### Heat Map for Condition number and variances 
 
 import matplotlib as mpl
@@ -92,6 +90,7 @@ plt.xlabel( r'Average secondary cases, $R_0$')
 plt.ylabel(ylabel=r'Dispersion parameter')
 plt.title('Condition Numbers')
 
+plt.show()
 
 # ax[1].imshow(variance_sim_addative,
 #             extent = (min(R0_vals),max(R0_vals),min(alpha_vals),max(alpha_vals)),
@@ -99,8 +98,14 @@ plt.title('Condition Numbers')
 #             )
 # ax[1].set(xlabel= r'Average secondary cases, $R_0$', title='Variances of polynomial roots')
 # plt.tight_layout()
+<<<<<<< Updated upstream
 plt.show()
 # plt.savefig("/Users/mar.boudreau/Documents/UVM/stochastic-polys/figures/additive_conds_correctdist_r0_05-4_alpha_001-1_viridis_50res_"+date+".pdf", format = "pdf")
+=======
+# plt.show()
+#plt.savefig("/Users/mar.boudreau/Documents/UVM/stochastic-polys/figures/additive_conds_correctdist_r0_05-4_alpha_001-1_viridis_50res_"+date+".pdf", format = "pdf")
+
+>>>>>>> Stashed changes
 
 print(condition_nums_additive)
 

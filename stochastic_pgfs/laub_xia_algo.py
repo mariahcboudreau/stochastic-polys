@@ -306,8 +306,8 @@ def l_x_algo(
     perturbation_type="additive",
     bifurcation=False,
     derivative_test=True,
-    max_iter=int(1e5),
-    tol=1e-5,
+    max_iter=int(1e8),
+    tol=1e-10,
     acceleration_method='steffensen',
     sampling_method='orthogonal'
 ):
