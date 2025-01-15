@@ -2,9 +2,11 @@ import os
 import sys
 sys.path.insert(1,os.getcwd())
 
-from stochastic_pgfs.laub_xia_algo import l_x_algo, is_real, in_bounds, _solve_self_consistent_equation, fast_polynomial_roots
+from stochastic_pgfs.laub_xia_algo import l_x_algo
 from stochastic_pgfs.pgfs import PGF, make_G_u_minus_u
-from stochastic_pgfs.viz_utils import outbreak_contours, condition_number_heatmap import numpy as np from stochastic_pgfs.sim import *
+from stochastic_pgfs.viz_utils import outbreak_contours, condition_number_heatmap 
+import numpy as np 
+from stochastic_pgfs.sim import *
 from scipy.stats import nbinom
 import pandas as pd
 import seaborn as sns
@@ -45,7 +47,7 @@ date = datetime.today().strftime('%m-%d-%Y')
 #         return 1 - og_roots
 
 
-alpha_vals = np.linspace(0.01,1,50)
+alpha_vals = np.linspace(0.01,1,10)
 
 # R0_vals = np.linspace(0.5,4,10)
 R0_vals = np.arange(0.8, 4.05, 0.05)
@@ -53,9 +55,9 @@ R0_vals = np.arange(0.8, 4.05, 0.05)
 N_max = 200 # Maximum value for N in the distribution
 
 #create partial function for the condition number heatmap
-my_K = 1000
+my_K = 100
 
-lx_additive = partial(l_x_algo, K=1000, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='additive')
+lx_additive = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds],perturbation_type='additive')
 # var_addative = partial(variance_sim, K=1000, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='additive')
 
 
