@@ -140,6 +140,16 @@ def G1(x, pk, T):
     denominator = pk_0.dot(pk_1)  # Use dot product on contiguous arrays
     return numerator.sum() / denominator
 
+def G_1_minus_u(x, pk, T):
+    """
+    Compute G_1 - u, which subtracts 1 from the coefficient for the linear term.
+    """
+    pk = np.copy(pk)
+    pk_G_1=  G1(x, pk, T)
+    pk_G_1[1,1] -= 1
+    return pk_G_1
+    
+
 @jit(nopython=True)
 def G1_prime(x, pk, T):
     x = (1 - T) + T * x
@@ -337,8 +347,8 @@ def l_x_algo(
         max_iter=max_iter
     )
     
-    #delta = np.float64(2**(-16))
-    delta = np.sqrt(np.abs(og_roots) * np.finfo(np.float64).eps)
+    delta = np.float64(2**(-16))
+    #delta = np.sqrt(np.abs(og_roots) * np.finfo(np.float64).eps)
     
     # Process perturbations
     og_roots_list = np.zeros((K), dtype=np.float64)
