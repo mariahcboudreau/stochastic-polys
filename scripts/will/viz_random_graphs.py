@@ -20,6 +20,14 @@ from stochastic_pgfs.random_graphs import (
     mean_power_law
 )
 
+from stochastic_pgfs.fig_settings import (
+        set_colors,
+        cmap_yellow,
+        cmap_blue
+)
+
+
+
 
 GREEN="#519E3E"
 ORANGE="#EF8636"
@@ -126,11 +134,12 @@ node_options = {
 # Create custom colormaps
 colors_blue = [(0, GRAY), (1, BLUE)]  # Define start (0) and end (1) points
 n_bins = 100
-cmap_blue = LinearSegmentedColormap.from_list("custom_blue", colors_blue, N=n_bins)
+# cmap_blue = LinearSegmentedColormap.from_list("custom_blue", colors_blue, N=n_bins)
 
 # Create colormap from gray to salmon (changed from green)
 colors_salmon = [(0, GRAY), (1, SALMON)]  # Define start (0) and end (1) points
-cmap_salmon = LinearSegmentedColormap.from_list("custom_salmon", colors_salmon, N=n_bins)
+# cmap_salmon = LinearSegmentedColormap.from_list("custom_salmon", colors_salmon, N=n_bins)
+cmap_salmon = cmap_yellow
 
 # Compute colors using unique 'lmbd' values
 er_lmbd_unique = df['lmbd'].unique()
@@ -225,10 +234,10 @@ ax4.legend_.remove()
 
 cbar_frac = 0.09
 # Add the colorbar to the figure
-#cbar1 = fig.colorbar(sm_er, ax=ax1, orientation='vertical', fraction=cbar_frac, pad=0.04)
+cbar1 = fig.colorbar(sm_er, ax=ax1, orientation='vertical', fraction=cbar_frac, pad=0.04)
 cbar2 = fig.colorbar(sm_er, ax=ax2, orientation='vertical', fraction=cbar_frac, pad=0.04)
 
-#cbar3 = fig.colorbar(sm_pl, ax=ax3, orientation='vertical', fraction=cbar_frac, pad=0.04)
+cbar3 = fig.colorbar(sm_pl, ax=ax3, orientation='vertical', fraction=cbar_frac, pad=0.04)
 cbar4 = fig.colorbar(sm_pl, ax=ax4, orientation='vertical', fraction=cbar_frac, pad=0.04)
 
 cbar1.set_label(r'$\lambda$')
@@ -237,5 +246,6 @@ cbar2.set_label(r'$\lambda$')
 cbar3.set_label(r'$\alpha$')
 cbar4.set_label(r'$\alpha$')
 
-plt.savefig("figures/condition_number_vs_mean_degree_er_powerlaw_addative.png")
+plt.show()
+#plt.savefig("figures/condition_number_vs_mean_degree_er_powerlaw_addative.png")
 #plt.savefig("figures/condition_number_vs_mean_degree_er_powerlaw_addative.pdf")

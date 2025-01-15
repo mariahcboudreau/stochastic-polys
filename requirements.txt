@@ -6,3 +6,4 @@ scipy==1.13.0
 seaborn==0.13.2
 numba==0.60.0
 tqdm==4.67.0
+cmasher==1.8.0 

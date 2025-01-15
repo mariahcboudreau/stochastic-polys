@@ -18,6 +18,7 @@ date = datetime.today().strftime('%m-%d-%Y')
 
 from mpi4py import MPI
 import logging
+from multiprocessing import Pool
 
 logging.basicConfig(level=logging.INFO)
         
@@ -119,9 +120,12 @@ if __name__ == '__main__':
             
             # Process local tasks
             local_results = []
-            for control_param, T in my_tasks:
-                result = process_data(control_param, T, dist_func, noise_func)
-                local_results.append(result)
+            def worker_task(args):
+                control_param, T, dist_func, noise_func = args
+                return process_data(control_param, T, dist_func, noise_func)
+
+            with Pool() as pool:
+                local_results = pool.map(worker_task, [(control_param, T, dist_func, noise_func) for control_param, T in my_tasks])
 
             # Gather results from all processes
             all_results = comm.gather(local_results, root=0)

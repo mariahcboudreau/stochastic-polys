@@ -46,19 +46,25 @@ def process_data(lmbd, T, degree_sequence_func, lx_func):
     outbreak_size = get_outbreak_size(my_degree_sequence, T)
     return {'lmbd': lmbd, 'T': T, 'sce': lx_func(my_degree_sequence, T=T), 'outbreak_size': outbreak_size}
 
-N_max = 1000  # Maximum value for N in the distribution
-my_K = int(1e4)  # number of samples per SCE estimate
+#N_max = 1000  # Maximum value for N in the distribution
+N_max = 100  # Maximum value for N in the distribution
+my_K = int(1e3)  # number of samples per SCE estimate
 max_iter = int(1e8)
 tol = 1e-10
 
 
 #params to sweep over
-T_vals = np.linspace(0.001, 1, 60)
+# T_vals = np.linspace(0.001, 1, 60)
 # alpha_vals = np.linspace(2.1, 3.4,30)
 # lmbd_vals = np.linspace(1.1, 2,30)
 
-alpha_vals = np.linspace(2.1, 3.4,1)
-lmbd_vals = np.linspace(1.1, 2,1)
+T_vals = np.linspace(0.001, 1, 10)
+alpha_vals = np.linspace(2.1, 3.4,3)
+lmbd_vals = np.linspace(1.1, 2,3)
+
+
+# alpha_vals = np.linspace(2.1, 3.4,1)
+# lmbd_vals = np.linspace(1.1, 2,1)
 
 
 lx_additive = partial(l_x_algo, 
