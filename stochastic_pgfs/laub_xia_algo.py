@@ -355,8 +355,8 @@ def l_x_algo(
     perturbed_roots_list = np.zeros((K), dtype=np.float64)
     SCE_list = []
     
-    # Calculate function value at fixed point
-    function_value = G1(og_roots, my_poly_coef, T)
+    # # Calculate function value at fixed point
+    # function_value = G1(og_roots, my_poly_coef, T)
     
     for i in range(K):
         if i % 1000 == 0:
@@ -385,4 +385,5 @@ def l_x_algo(
     gradient_norm = np.linalg.norm(np.abs(perturbed_roots_list - og_roots) / delta * np.abs(og_roots))
     
     # Scale by function value and Wallis factors
-    return (gradient_norm / np.abs(function_value)) * omega(K) / omega(N)
+    #return (gradient_norm / np.abs(function_value)) * omega(K) / omega(N)
+    return (gradient_norm) * omega(K) / omega(N)
