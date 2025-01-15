@@ -47,7 +47,7 @@ date = datetime.today().strftime('%m-%d-%Y')
 #         return 1 - og_roots
 
 
-alpha_vals = np.linspace(0.01,1,10)
+alpha_vals = np.linspace(0.01,1,100)
 
 # R0_vals = np.linspace(0.5,4,10)
 R0_vals = np.arange(0.8, 4.05, 0.05)
@@ -55,7 +55,7 @@ R0_vals = np.arange(0.8, 4.05, 0.05)
 N_max = 200 # Maximum value for N in the distribution
 
 #create partial function for the condition number heatmap
-my_K = 100
+my_K = 1000
 
 lx_additive = partial(l_x_algo, K=my_K, conditions=[is_real, in_bounds],perturbation_type='additive')
 # var_addative = partial(variance_sim, K=1000, conditions=[is_real, in_bounds],is_pgf=True,perturbation_type='additive')
@@ -86,7 +86,7 @@ X, Y = np.meshgrid(R0_vals, alpha_vals)
 
 plt.imshow(condition_nums_additive,
             extent = (min(R0_vals),max(R0_vals),min(alpha_vals),max(alpha_vals)),
-             origin = 'lower', aspect = 'auto', cmap = 'viridis'
+             origin = 'lower', aspect = 'auto', cmap = 'pink'
             )
 plt.xlabel( r'Average secondary cases, $R_0$')
 plt.ylabel(ylabel=r'Dispersion parameter')
@@ -99,15 +99,15 @@ plt.title('Condition Numbers')
 #             )
 # ax[1].set(xlabel= r'Average secondary cases, $R_0$', title='Variances of polynomial roots')
 # plt.tight_layout()
-# plt.show()
-plt.savefig("/Users/mar.boudreau/Documents/UVM/stochastic-polys/figures/additive_conds_correctdist_r0_05-4_alpha_001-1_viridis_50res_"+date+".pdf", format = "pdf")
+plt.show()
+# plt.savefig("/Users/mar.boudreau/Documents/UVM/stochastic-polys/figures/additive_conds_correctdist_r0_05-4_alpha_001-1_viridis_50res_"+date+".pdf", format = "pdf")
 
-
+print(condition_nums_additive)
 
 # # Saving all files
 
-with open('/Users/mar.boudreau/Documents/UVM/stochastic-polys/data/additive_condition_nums_50res_'+date+'.npy', 'wb') as f:
-    np.save(f, condition_nums_additive)
+# with open('/Users/mar.boudreau/Documents/UVM/stochastic-polys/data/additive_condition_nums_50res_'+date+'.npy', 'wb') as f:
+#     np.save(f, condition_nums_additive)
 # # with open('/Users/mcboudre/Documents/LSD_Lab/stochastic-polys/data/additive_variances_60res_'+date+'.npy', 'wb') as f:
 # #     np.save(f, var_addative)
 # # with open('/Users/mcboudre/Documents/LSD_Lab/stochastic-polys/data/root_lines_80res_'+date+'.npy', 'wb') as f:
