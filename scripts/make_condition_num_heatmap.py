@@ -1,4 +1,4 @@
-from stochastic_pgfs.laub_xia_algo import l_x_algo, is_real, in_bounds
+from stochastic_pgfs.laub_xia_algo import l_x_algo
 from stochastic_pgfs.pgfs import PGF, make_G_u_minus_u
 from stochastic_pgfs.viz_utils import condition_number_heatmap
 import numpy as np

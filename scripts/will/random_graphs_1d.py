@@ -54,12 +54,12 @@ tol = 1e-10
 
 #params to sweep over
 T_vals = np.linspace(0.001, 1, 60)
-alpha_vals = np.linspace(2.1, 3.4,30)
-lmbd_vals = np.linspace(1.1, 2,30)
+# alpha_vals = np.linspace(2.1, 3.4,30)
+# lmbd_vals = np.linspace(1.1, 2,30)
 
-# T_vals = np.linspace(0.001, 1, 50)
-# alpha_vals = [2.11]
-# lmbd_vals = [2.0]
+alpha_vals = np.linspace(2.1, 3.4,1)
+lmbd_vals = np.linspace(1.1, 2,1)
+
 
 lx_additive = partial(l_x_algo, 
                       max_iter=max_iter,
