@@ -158,7 +158,7 @@ def G1_prime(x, pk, T):
     denominator =  pk[:, 0] * pk[:, 1]
     return numerator.sum() / denominator.sum()
 
-def get_outbreak_size(my_degree_sequence, T, method='steffensen'):
+def get_outbreak_size(my_degree_sequence, T, method='steffensen',tol = 1e-8,max_iter = 1e10):
     """
     Calculate outbreak size using specified acceleration method
     
@@ -175,8 +175,8 @@ def get_outbreak_size(my_degree_sequence, T, method='steffensen'):
         pk,
         T=T, 
         method=method,
-        tol=1e-5, 
-        max_iter=int(1e5)
+        tol=tol, 
+        max_iter=max_iter
     )
     outbreak_size = 1 - u2
     return outbreak_size
