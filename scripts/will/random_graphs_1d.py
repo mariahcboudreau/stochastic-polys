@@ -43,12 +43,12 @@ def process_data(lmbd, T, degree_sequence_func, lx_func):
     logging.info(f"T: {T}")
     logging.info(f"lmbd: {lmbd}")
     my_degree_sequence = degree_sequence_func(lmbd)
-    outbreak_size = get_outbreak_size(my_degree_sequence, T)
+    outbreak_size = get_outbreak_size(my_degree_sequence, T,tol = tol,max_iter = max_iter)
     return {'lmbd': lmbd, 'T': T, 'sce': lx_func(my_degree_sequence, T=T), 'outbreak_size': outbreak_size}
 
 #N_max = 1000  # Maximum value for N in the distribution
-N_max = 100  # Maximum value for N in the distribution
-my_K = int(1e3)  # number of samples per SCE estimate
+N_max = 1000  # Maximum value for N in the distribution
+my_K = int(1e4)  # number of samples per SCE estimate
 max_iter = int(1e8)
 tol = 1e-10
 
@@ -56,15 +56,12 @@ tol = 1e-10
 #params to sweep over
 # T_vals = np.linspace(0.001, 1, 60)
 # alpha_vals = np.linspace(2.1, 3.4,30)
-# lmbd_vals = np.linspace(1.1, 2,30)
 
-T_vals = np.linspace(0.001, 1, 10)
-alpha_vals = np.linspace(2.1, 3.4,3)
-lmbd_vals = np.linspace(1.1, 2,3)
+T_vals = np.linspace(0.001, 1, 200)
+alpha_vals = np.linspace(2.1, 3.6,10)
+lmbd_vals = np.linspace(1.1, 2,10)
 
 
-# alpha_vals = np.linspace(2.1, 3.4,1)
-# lmbd_vals = np.linspace(1.1, 2,1)
 
 
 lx_additive = partial(l_x_algo, 
@@ -89,14 +86,11 @@ def worker_task(control_param, T, dist_func, noise_func):
     return result
 
 if __name__ == '__main__':
-    
-    data_dict_list = []
-
     for dist_name, dist_func in dist_dict.items():
+        data_dict_list = []
         for noise_name, noise_func in noise_dict.items():
             control_param_vals = control_params_dict[dist_name]
             tasks = []
-
             for control_param in control_param_vals:
                 my_dist = dist_func(control_param)
                 critical_value = calculate_critical_transition(my_dist)
@@ -115,6 +109,7 @@ if __name__ == '__main__':
             with Pool() as pool:
                 # Map the worker_task over all tasks
                 results = pool.starmap(worker_task, tasks)
+                
             data_dict_list.extend(results)
 
             df = pd.DataFrame(data_dict_list)
