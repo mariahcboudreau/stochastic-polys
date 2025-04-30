@@ -8,6 +8,8 @@ from functools import partial
 from jaxopt import Bisection, FixedPointIteration
 import sys
 import os
+from scipy.stats import nbinom
+from tqdm import tqdm
 
 # Import from stochastic_pgfs
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
@@ -16,9 +18,26 @@ from stochastic_pgfs.laub_xia_algo import l_x_algo
 
 # ====================== UTILITY CLASSES AND FUNCTIONS ======================
 
+K = 0.01
+
 def poisson_pgf(x, lmbd):
     """Evaluate the PGF of a Poisson distribution."""
-    return jnp.exp(lmbd * (x - 1))
+   # return jnp.exp(lmbd * (x - 1))
+    R0 = lmbd
+    k = K
+    return (1 + R0/k * (1-x))**(-k)
+
+
+def poisson_degree_sequence(r0, k = K, N_max = 300):
+    
+    n = k
+    p = k / (r0 + k) 
+    #p = r0 / (r0 + k)  # Adjusted for the new parameterization
+    dist = nbinom(n=n, p=p)  # Scipy parameterizes with alpha / R0 + alpha
+    degree_sequence = dist.pmf(range(N_max + 1))
+    return degree_sequence
+
+
 
 class PGF:
     def __init__(self, poly_coef):
@@ -115,7 +134,7 @@ def bisection_root_non_parametric(coeffs):
 
 # ====================== MAIN ANALYSIS FUNCTION ======================
 
-def analyze_sce_methods(lambda_range, N_max=10, K_samples=1000, tol=1e-10):
+def analyze_sce_methods(lambda_range, N_max=1000, K_samples=1000, tol=1e-10):
     """
     Analyze and compare SCE calculation methods across lambda values.
     
@@ -130,7 +149,7 @@ def analyze_sce_methods(lambda_range, N_max=10, K_samples=1000, tol=1e-10):
     """
     results = []
     
-    for lmbd in lambda_range:
+    for lmbd in tqdm(lambda_range):
         lmbd_float = float(lmbd)
         
         # Generate degree sequence and PGF
@@ -140,9 +159,13 @@ def analyze_sce_methods(lambda_range, N_max=10, K_samples=1000, tol=1e-10):
         
         # 1. Find roots using polynomial method
         u_star_poly = get_root_polynomial(pgf_coef, subtract_x=False)
+       
+        
         
         # 2. Find roots using FixedPointIteration
         u_star_fp_param, fp_param_grad = jax.value_and_grad(fixed_point_solver_parametric)(lmbd_float)
+        
+        u_star = u_star_fp_param#Use the parametric fixd point for the gradient
         
         # For non-parametric case, separate value and gradient calculation
         # Use the original degree_seq for fixed point iteration, not the modified pgf_coef
@@ -150,7 +173,7 @@ def analyze_sce_methods(lambda_range, N_max=10, K_samples=1000, tol=1e-10):
         fp_nonparam_grad = jax.grad(lambda coef: fixed_point_solver_non_parametric(coef))(degree_seq)
         
         # Use polynomial root for gradient calculations
-        u_star = u_star_poly
+        #u_star = u_star_poly
         
         # METHOD 1: Implicit differentiation
         degree_seq_minus_x = degree_seq.at[1].add(-1.0)
@@ -182,7 +205,7 @@ def analyze_sce_methods(lambda_range, N_max=10, K_samples=1000, tol=1e-10):
                 acceleration_method='steffensen',
                 sampling_method='orthogonal'
             )
-            sce_rel_lx = sce_abs_lx * u_star
+            sce_rel_lx = sce_abs_lx #* u_star
         except Exception as e:
             print(f"LaubXia failed for lambda={lmbd_float}: {e}")
             sce_abs_lx = float('nan')
@@ -291,7 +314,7 @@ def plot_results(results_df, figsize=(18, 15)):
 def main():
     """Main execution function."""
     # Define lambda range
-    lambda_range = jnp.linspace(0.1, 2.0, 50)
+    lambda_range = jnp.linspace(0.1, 2.0, 20)
     
     # Run analysis
     print("Starting SCE analysis...")
