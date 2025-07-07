@@ -2,8 +2,7 @@ import os
 import sys
 sys.path.insert(1,os.getcwd())
 
-
-from stochastic_pgfs.laub_xia_algo import polynomial_roots, is_real, in_bounds, _solve_self_consistent_equation
+import stochastic_pgfs.laub_xia_algo
 from stochastic_pgfs.pgfs import PGF, make_G_u_minus_u
 from stochastic_pgfs.viz_utils import outbreak_contours
 import numpy as np
@@ -36,7 +35,7 @@ def solve_for_root(r, p):
 
 
 R0_vals = np.linspace(0.8, 4.0, 1000)
-alpha_vals = np.linspace(0.01, 1, 50)
+alpha_vals = np.linspace(0.01, 10, 100)
 X, Y = np.meshgrid(R0_vals, alpha_vals)
 p = X/(Y+X)
 r = Y
@@ -58,10 +57,10 @@ outbreak_lines = 1 - root_lines
 
 
 
-with open('/Users/mar.boudreau/Documents/UVM/stochastic-polys/data/root_lines_infinite_'+date+'.npy', 'wb') as f:
-    np.save(f, root_lines) 
-with open('/Users/mar.boudreau/Documents/UVM/stochastic-polys/data/outbreak_lines_infinite_'+date+'.npy', 'wb') as f:
-    np.save(f, outbreak_lines)   
+# with open('/Users/mar.boudreau/Documents/UVM/stochastic-polys/data/root_lines_infinite_'+date+'.npy', 'wb') as f:
+#     np.save(f, root_lines) 
+# with open('/Users/mar.boudreau/Documents/UVM/stochastic-polys/data/outbreak_lines_infinite_'+date+'.npy', 'wb') as f:
+#     np.save(f, outbreak_lines)   
 # with open('/Users/mcboudre/Documents/LSD_Lab/stochastic-polys/data/additive_condition_nums_60res_'+date+'.npy', 'rb') as f:
 #     condition_nums_addative = np.load(f)
 # with open('/Users/mcboudre/Documents/LSD_Lab/stochastic-polys/data/additive_variances_60res_'+date+'.npy', 'rb') as f:
