@@ -158,7 +158,7 @@ def G1_prime(x, pk, T):
     denominator =  pk[:, 0] * pk[:, 1]
     return numerator.sum() / denominator.sum()
 
-def get_outbreak_size(my_degree_sequence, T, method='steffensen'):
+def get_outbreak_size(my_degree_sequence, T, method='steffensen',tol = 1e-8,max_iter = 1e10):
     """
     Calculate outbreak size using specified acceleration method
     
@@ -175,8 +175,8 @@ def get_outbreak_size(my_degree_sequence, T, method='steffensen'):
         pk,
         T=T, 
         method=method,
-        tol=1e-5, 
-        max_iter=int(1e5)
+        tol=tol, 
+        max_iter=max_iter
     )
     outbreak_size = 1 - u2
     return outbreak_size
@@ -364,8 +364,8 @@ def l_x_algo(
     perturbed_roots_list = np.zeros((K), dtype=np.float64)
     SCE_list = []
     
-    # Calculate function value at fixed point
-    function_value = G1(og_roots, my_poly_coef, T)
+    # # Calculate function value at fixed point
+    # function_value = G1(og_roots, my_poly_coef, T)
     
     for i in range(K):
         if i % 1000 == 0:
@@ -402,8 +402,13 @@ def l_x_algo(
     gradient_norm = np.linalg.norm(np.abs(perturbed_roots_list - og_roots) / delta * np.abs(og_roots))
     # print(N)
     # Scale by function value and Wallis factors
+<<<<<<< HEAD
     #return gradient_norm
     #return (gradient_norm) *omega(K) / omega(N)
     # print("gradient_norm:", gradient_norm)
 
     return (gradient_norm / np.abs(function_value)) * omega(K) / omega(N)
+=======
+    #return (gradient_norm / np.abs(function_value)) * omega(K) / omega(N)
+    return (gradient_norm) * omega(K) / omega(N)
+>>>>>>> 63eca72d28df9cb2f93152dbe6d80b83515ae077

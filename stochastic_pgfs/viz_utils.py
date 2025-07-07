@@ -27,11 +27,11 @@ def condition_number_heatmap(lx_func, alpha_vals, R0_vals, N_max):
             alpha = alpha_vals[i]
             n = alpha
             R0 = R0_vals[j] 
-            p = alpha / (R0 + alpha) #Changed this parameter
-            dist = nbinom(n=n, p=p)  # Scipy parameterizes differently, check this
+            p = alpha / (R0 + alpha) 
+            dist = nbinom(n=n, p=p)  # Scipy parameterizes with alpha / R0 + alpha
             my_pdf = dist.pmf(range(N_max + 1))
             my_pdf = my_pdf/np.sum(my_pdf)
-            condition_nums[i,j] = lx_func(my_pdf,T = 1,K = int(1e4))
+            condition_nums[i,j] = lx_func(my_pdf, T = 1, K = int(1e4))
     return condition_nums
 
 

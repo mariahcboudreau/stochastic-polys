@@ -33,6 +33,7 @@
 .DS_Store
 .DS_Store?
 ._*
+
 .Spotlight-V100
 .Trashes
 ehthumbs.db
@@ -41,3 +42,8 @@ Thumbs.db
 # Files #
 ######################
 Stochastic_pgfs.egg-info/
+figures/
+final_figures/
+old_files/
+papers/
+
