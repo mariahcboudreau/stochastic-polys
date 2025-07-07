@@ -25,10 +25,10 @@ def omega(n):
     Parameters:
     n (float): The input value.
     Returns:
-    float: The calculated value of the wallace factor
+    float: The calculated value of the wallis factor
     """
     a1 = np.sqrt(2 / (np.pi * (n - 0.5)))
-    a2 = np.sqrt((184 * n**4) + 23 * n + 23 * n**2 + 184 * n**4)
+    a2 = np.sqrt((184 * n**4)/ (1 + 23 * n + 23 * n**2 + 184 * n**4))
     return a1 * a2
 
 def generate_sphere_point(dim):
@@ -309,14 +309,22 @@ def l_x_algo(
     max_iter=int(1e8),
     tol=1e-10,
     acceleration_method='steffensen',
-    sampling_method='orthogonal'
+    sampling_method='orthogonal',
+    assume_G1_equal = True
 ):
     """Calculate stability measure using the Laub-Xia algorithm"""
     # Ensure input arrays are contiguous and properly typed
     T = np.float64(T)
+
+    if assume_G1_equal:
+        my_poly_coef= my_poly_coef/np.arange(1,len(my_poly_coef)+1)
+        my_poly_coef = np.insert(my_poly_coef, 0, 0)
+
     my_poly_coef = np.ascontiguousarray(my_poly_coef)
     my_poly_coef = np.vstack((np.arange(0, my_poly_coef.shape[0], 1), my_poly_coef)).T.copy()
     
+    # print(my_poly_coef)
+
     if conditions is None:
         conditions = []
     
@@ -347,8 +355,9 @@ def l_x_algo(
         max_iter=max_iter
     )
     
-    delta = np.float64(2**(-16))
-    #delta = np.sqrt(np.abs(og_roots) * np.finfo(np.float64).eps)
+    
+    # delta = np.float64(2**(-16))
+    delta = np.sqrt(np.abs(og_roots) * np.finfo(np.float64).eps)
     
     # Process perturbations
     og_roots_list = np.zeros((K), dtype=np.float64)
@@ -381,8 +390,20 @@ def l_x_algo(
        
         perturbed_roots_list[i] = perturbed_roots
    
+
+
+    # # Debugging: Print the values of perturbed_roots_list and og_roots
+    # print("perturbed_roots_list:", perturbed_roots_list)
+    # print("og_roots:", og_roots)
+    # print("function_value:", function_value)    
+
+
     # Calculate scaled gradient norm
     gradient_norm = np.linalg.norm(np.abs(perturbed_roots_list - og_roots) / delta * np.abs(og_roots))
-    
+    # print(N)
     # Scale by function value and Wallis factors
+    #return gradient_norm
+    #return (gradient_norm) *omega(K) / omega(N)
+    # print("gradient_norm:", gradient_norm)
+
     return (gradient_norm / np.abs(function_value)) * omega(K) / omega(N)
