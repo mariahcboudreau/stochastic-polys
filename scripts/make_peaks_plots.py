@@ -47,12 +47,12 @@ cmap_yellow = mpl.colors.LinearSegmentedColormap.from_list("custom_yellow", colo
 
 date = "03-13-2025"
 
-with open('/Users/mar.boudreau/Documents/UVM/stochastic-polys/data//additive_condition_nums_1000res_lo_001-10_025r0res_'+date+'.npy', 'rb') as f:
+with open('./stochastic-polys/data//additive_condition_nums_1000res_lo_001-10_025r0res_'+date+'.npy', 'rb') as f:
     condition_nums_additive = np.load(f) # R_0 values are columns and alpha are rows 
 
 date = "01-27-2025"
 
-with open('/Users/mar.boudreau/Documents/UVM/stochastic-polys/data/outbreak_lines_infinite_'+date+'.npy', 'rb') as f:
+with open('./stochastic-polys/data/outbreak_lines_infinite_'+date+'.npy', 'rb') as f:
     outbreaks = np.load(f) 
 
 
@@ -148,6 +148,6 @@ from datetime import datetime
 date = datetime.today().strftime('%m-%d-%Y')
 
 plt.show()
-# plt.savefig("/Users/mar.boudreau/Documents/UVM/stochastic-polys/figures/peaks_plots_negativebinom_final_"+date+".pdf", format = "pdf")
+# plt.savefig("./stochastic-polys/figures/peaks_plots_negativebinom_final_"+date+".pdf", format = "pdf")
 
 

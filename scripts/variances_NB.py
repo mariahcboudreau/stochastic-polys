@@ -135,7 +135,7 @@ for i in range(len(k_vals)):
 # plt.yscale('log')
 # plt.title('Variances')
 # # plt.show()
-# plt.savefig("/Users/mar.boudreau/Documents/UVM/stochastic-polys/figures/variance_heatmaps.pdf", format = "pdf")
+# plt.savefig("./stochastic-polys/figures/variance_heatmaps.pdf", format = "pdf")
 # plt.close()
 
 perturbed_df = pd.DataFrame()
@@ -155,7 +155,7 @@ axes.violinplot(dataset = [data_centered["[1.20, 8.05]"].values,
 plt.xlabel(r'$R_{0}$ and $k$ pairs')
 plt.ylabel('Relative variance')
 plt.tight_layout()
-plt.savefig('/Users/mar.boudreau/Documents/UVM/stochastic-polys/figures/variance_boxplot_02-11-2025.pdf', format = 'pdf')
+plt.savefig(f'./stochastic-polys/figures/variance_boxplot_{date}.pdf', format = 'pdf')
 # plt.show()
 
 print(perturbed_df)
