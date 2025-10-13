@@ -402,13 +402,5 @@ def l_x_algo(
     gradient_norm = np.linalg.norm(np.abs(perturbed_roots_list - og_roots) / delta * np.abs(og_roots))
     # print(N)
     # Scale by function value and Wallis factors
-<<<<<<< HEAD
-    #return gradient_norm
-    #return (gradient_norm) *omega(K) / omega(N)
-    # print("gradient_norm:", gradient_norm)
-
-    return (gradient_norm / np.abs(function_value)) * omega(K) / omega(N)
-=======
     #return (gradient_norm / np.abs(function_value)) * omega(K) / omega(N)
     return (gradient_norm) * omega(K) / omega(N)
->>>>>>> 63eca72d28df9cb2f93152dbe6d80b83515ae077

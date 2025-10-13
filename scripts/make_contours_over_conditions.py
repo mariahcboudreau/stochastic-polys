@@ -18,12 +18,12 @@ alpha_vals_inf = np.linspace(0.01, 10, 100)
 
 date = "01-27-2025"
 
-with open('./stochastic-polys/data/additive_condition_nums_1000res_lo_001-10_025r0res_'+date+'.npy', 'rb') as f:
-    condition_nums_additive = np.load(f) # R_0 values are columns and alpha are rows 
+# with open('./data/additive_condition_nums_1000res_lo_001-10_025r0res_'+date+'.npy', 'rb') as f:
+#     condition_nums_additive = np.load(f) # R_0 values are columns and alpha are rows 
 
 
 
-with open('./stochastic-polys/data/outbreak_lines_infinite_'+date+'.npy', 'rb') as f:
+with open('./data/outbreak_lines_infinite_'+date+'.npy', 'rb') as f:
     outbreaks = np.load(f) 
 
 roots = 1-outbreaks

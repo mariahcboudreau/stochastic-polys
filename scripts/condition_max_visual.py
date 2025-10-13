@@ -11,7 +11,7 @@ from matplotlib.patches import Rectangle
 
 date = "03-13-2025"
 
-with open('/Users/mar.boudreau/Documents/UVM/stochastic-polys/data/additive_condition_nums_1000res_lo_001-10_025r0res_'+date+'.npy', 'rb') as f:
+with open('./data/additive_condition_nums_1000res_lo_001-10_025r0res_'+date+'.npy', 'rb') as f:
     condition_nums_additive = np.load(f) # R_0 values are columns and alpha are rows 
 
 
@@ -147,6 +147,6 @@ plt.yscale('log')
 
 # plt.legend(bbox_to_anchor=(1.5, 1.175), loc='upper right', frameon = False)
 plt.tight_layout()
-# plt.show()
+plt.show()
 
-plt.savefig("/Users/mar.boudreau/Documents/UVM/stochastic-polys/figures/heatmap_max_variancemarkers_blues_logscale_"+date+".pdf", format = "pdf")
+# plt.savefig("./stochastic-polys/figures/heatmap_max_variancemarkers_blues_logscale_"+date+".pdf", format = "pdf")
