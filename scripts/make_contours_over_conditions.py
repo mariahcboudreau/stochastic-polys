@@ -49,7 +49,7 @@ result_indices_k = find_indices_in_interval(alpha_vals_inf, 0.26, 0.69)
 
 x = outbreaks[result_indices_k[0]:result_indices_k[-1], result_indices_r0[0]:result_indices_r0[-1]]
 
-
+print( "Min:", np.min(x), "Max:", np.max(x))
 
 import matplotlib as mpl
 mpl.rcParams.update(mpl.rcParamsDefault)

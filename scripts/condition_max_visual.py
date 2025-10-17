@@ -85,10 +85,11 @@ def find_indices_in_interval(arr, lower_bound, upper_bound):
   return indices
 
 
-result_indices_r0 = find_indices_in_interval(R0_vals, 1.4, 3.825)
-result_indices_k = find_indices_in_interval(alpha_vals, 0.1, 0.12)
+result_indices_r0 = find_indices_in_interval(R0_vals, 1.52, 2.18)
+result_indices_k = find_indices_in_interval(alpha_vals, 0.18, 0.54)
 
 x = condition_nums_additive[result_indices_k[0]:result_indices_k[-1]+1, result_indices_r0[0]:result_indices_r0[-1]+1]
+print( "Min:", np.min(x), "Max:", np.max(x))
 print('stop')
 
 # Create subplots
