@@ -50,4 +50,5 @@ stochastic_polys-myenv/
 test/
 uncertinaty_bifurcation.py
 test_kappa_sce.py
-make_conceptual_conclusions_figure.ipynbtest/
+make_conceptual_conclusions_figure.ipynb
+
